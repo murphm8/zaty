@@ -1,0 +1,5 @@
+[package]
+
+name = "lotus"
+version = "0.0.1"
+authors = ["Matt Murphy <matthew.john.murphy@gmail.com>"]
