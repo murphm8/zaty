@@ -1,8 +1,12 @@
 use std::cell::Cell;
+use memory::Memory;
+use memory::low_nibble;
+use memory::high_nibble;
+
 mod memory;
 
 fn main() {
-    let mut memory = memory::Memory::new();
+    let mut memory = Memory::new();
     let mut cpu = Cpu::new(memory);
 
     let mut vec: [u8, ..65535] = [0 as u8, ..65535];
@@ -21,13 +25,13 @@ struct Cpu {
 }
 
 impl Cpu {
-    fn new(memory: memory::Memory) -> Cpu {
+    fn new(memory: Memory) -> Cpu {
         return Cpu{reg: Registers::new(), mem: memory}
     }
     
     fn tick(&mut self) {
         let op_code = self.mem.read_byte(self.reg.pc.get());
-        match memory::high_nibble(op_code) {
+        match high_nibble(op_code) {
             0x0 => self.zero(op_code),
             _ => return
         }
@@ -35,18 +39,17 @@ impl Cpu {
 
 
 
-    fn zero(&mut self, op_code: u8) {
-        let reg = &mut self.reg;
-        match memory::low_nibble(op_code) {
+    fn zero(&self, op_code: u8) {
+        match low_nibble(op_code) {
             0x0 => nop(),
-            0x1 => ld_immediate(reg.b, reg.c),
+            0x1 => ld_immediate(self.mem, self.reg.b, self.reg.c),
             _ => return
         }
     }
 }
 
 // Loads the memory pointed to by the next two bytes into a register
-fn ld_immediate(high_byte: Cell<u8>, low_byte: Cell<u8>)
+fn ld_immediate(mem: Memory, high_byte: Cell<u8>, low_byte: Cell<u8>)
 {
 }
 
