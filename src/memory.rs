@@ -3,6 +3,7 @@ use std::rand;
 use std::iter::range_inclusive;
 use std::iter::range_step_inclusive;
 use std::cell::Cell;
+use std::path::Path;
 
 pub struct Memory {
     mem: [Cell<u8>, ..65536] 
@@ -31,6 +32,9 @@ impl Memory {
         self.mem[addr as uint].set(low_byte(data));
         self.mem[(addr + 1) as uint].set(high_byte(data));
     }
+
+    pub fn load_rom(&self, path: Path) {
+    }
 }
 
 pub fn high_nibble(num: u8) -> u8 {
@@ -54,41 +58,41 @@ pub fn pack_u16(high: u8, low: u8) -> u16 {
 }
 
 #[test]
-fn high_nibble_should_return_high_nibble() {
+fn test_high_nibble() {
     assert!(high_nibble(0xFA) == 0xF);
     assert!(high_nibble(0x0F) == 0x0);
 }
 
 #[test]
-fn low_nibble_should_return_low_nibble() {
+fn test_low_nibble() {
     assert!(low_nibble(0x0F) == 0xF);
     assert!(low_nibble(0xF0) == 0x0);
     assert!(low_nibble(0xAA) == 0xA);
 }
 
 #[test]
-fn low_byte_should_return_low_byte() {
+fn test_low_byte() {
     assert!(low_byte(0xFFEE) == 0xEE);
     assert!(low_byte(0xFF00) == 0x00);
     assert!(low_byte(0x00FF) == 0xFF);
 }
 
 #[test]
-fn high_byte_should_return_high_byte() {
+fn test_high_byte() {
     assert!(high_byte(0xAE00) == 0xAE);
     assert!(high_byte(0xF0F0) == 0xF0);
     assert!(high_byte(0x00FF) == 0x00);
 }
 
 #[test]
-fn pack_u16_should_pack() {
+fn test_pack_u16() {
     assert!(pack_u16(0xA, 0xE) == 0xAE);
     assert!(pack_u16(0xF, 0x0) == 0xF0);
     assert!(pack_u16(0x0, 0xF) == 0x0F);
 }
 
 #[test]
-fn write_byte_should_write_to_mem() {
+fn test_Memory_write_byte() {
     let mut memory = Memory::new();
     let mut rng = rand::task_rng();
 
@@ -101,7 +105,7 @@ fn write_byte_should_write_to_mem() {
 }
 
 #[test]
-fn write_word_should_write_word_to_mem_little_endian() {
+fn test_Memory_write_word() {
     let mut memory = Memory::new();
     let mut rng = rand::task_rng();
 
@@ -115,7 +119,7 @@ fn write_word_should_write_word_to_mem_little_endian() {
 }
 
 #[test]
-fn read_byte_should_read_byte() {
+fn test_Memory_read_byte() {
     let mut memory = Memory::new();
     
     memory.mem[0].set(0xF1);
@@ -129,7 +133,7 @@ fn read_byte_should_read_byte() {
 }
 
 #[test]
-fn read_word_should_read_word() {
+fn test_Memory_read_word() {
     let mut memory = Memory::new();
     
     memory.mem[0].set(0xF1);
