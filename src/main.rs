@@ -1,10 +1,15 @@
+extern crate num;
+
 use std::cell::Cell;
+use num::integer::Integer;
 use memory::Memory;
 use memory::low_nibble;
 use memory::high_nibble;
+use extensions::Incrementor;
 
 mod memory;
 mod ops;
+mod extensions;
 
 fn main() {
     let mut memory = Memory::new();
@@ -20,6 +25,7 @@ fn main() {
     }
 }
 
+
 struct Cpu {
     reg: Registers,
     mem: memory::Memory
@@ -33,7 +39,7 @@ impl Cpu {
     /// Execute a cycle on the cpu
     fn tick(&mut self) {
         let instr = self.fetch_instruction(); 
-        self.increment_pc();
+        self.reg.pc.increment();
 
         match high_nibble(instr) {
             0x0 => self.zero(instr),
@@ -45,15 +51,10 @@ impl Cpu {
     /// and increments the pc by 1
     fn fetch_instruction(&self) -> u8 {
         let instr = self.mem.read_byte(self.reg.pc.get());
-        self.increment_pc();
+        self.reg.pc.increment();
         return instr;     
     }
-        
-    /// Increments the program counter by 1
-    fn increment_pc(&self) {
-        self.reg.pc.set(self.reg.pc.get() + 1);
-    }
-    
+
     fn zero(&self, op_code: u8) {
         match low_nibble(op_code) {
             0x0 => ops::nop(),
