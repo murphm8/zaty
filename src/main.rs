@@ -4,6 +4,7 @@ use memory::low_nibble;
 use memory::high_nibble;
 
 mod memory;
+mod ops;
 
 fn main() {
     let mut memory = Memory::new();
@@ -28,34 +29,40 @@ impl Cpu {
     fn new(memory: Memory) -> Cpu {
         return Cpu{reg: Registers::new(), mem: memory}
     }
-    
+   
+    /// Execute a cycle on the cpu
     fn tick(&mut self) {
-        let op_code = self.mem.read_byte(self.reg.pc.get());
-        match high_nibble(op_code) {
-            0x0 => self.zero(op_code),
+        let instr = self.fetch_instruction(); 
+        self.increment_pc();
+
+        match high_nibble(instr) {
+            0x0 => self.zero(instr),
             _ => return
         }
     }
-
-
-
+   
+    /// Fetches the instruction pointed to by the program counter
+    /// and increments the pc by 1
+    fn fetch_instruction(&self) -> u8 {
+        let instr = self.mem.read_byte(self.reg.pc.get());
+        self.increment_pc();
+        return instr;     
+    }
+        
+    /// Increments the program counter by 1
+    fn increment_pc(&self) {
+        self.reg.pc.set(self.reg.pc.get() + 1);
+    }
+    
     fn zero(&self, op_code: u8) {
         match low_nibble(op_code) {
-            0x0 => nop(),
-            0x1 => ld_immediate(self.mem, self.reg.b, self.reg.c),
+            0x0 => ops::nop(),
+            0x6 => ops::ld_next_byte(self.mem, &self.reg.pc, &self.reg.b),
             _ => return
         }
     }
 }
 
-// Loads the memory pointed to by the next two bytes into a register
-fn ld_immediate(mem: Memory, high_byte: Cell<u8>, low_byte: Cell<u8>)
-{
-}
-
-fn nop() {
-    println!("nop");
-}
 
 struct Registers {
     a: Cell<u8>, b: Cell<u8>, c: Cell<u8>, d: Cell<u8>, e: Cell<u8>, f: Cell<u8>, h: Cell<u8>, l: Cell<u8>, // 8-bit registers

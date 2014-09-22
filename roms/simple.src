@@ -1,0 +1,13 @@
+; --------- ------------------- ----------------------------
+
+#target rom       ; declare target file format
+
+#code       0,$4000             ; declare code segment
+	
+	ld b,1h
+	ld a,b
+	add a,b
+
+#end                            ; terminate #target
+
+; --------- ------------------- ----------------------------
