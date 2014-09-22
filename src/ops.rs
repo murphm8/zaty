@@ -2,13 +2,14 @@ use std::cell::Cell;
 use memory::Memory;
 use extensions::Incrementor;
 
-
+/// Add the value of two registers and store it in the first register
 pub fn add(first: &Cell<u8>, second: &Cell<u8>) {
     debug!("add: {} {}", first.get(), second.get());
     let new_value = first.get() + second.get();
     first.set(new_value);
 }
 
+/// Load the value from one register into another
 pub fn ld_reg_to_reg(target: &Cell<u8>, source: &Cell<u8>) {
     debug!("ld_reg_to_reg: {}", source.get());
     let val = source.get();
