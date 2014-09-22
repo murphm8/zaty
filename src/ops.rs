@@ -4,20 +4,21 @@ use extensions::Incrementor;
 
 
 pub fn add(first: &Cell<u8>, second: &Cell<u8>) {
-    println!("add: {} {}", first.get(), second.get());
+    debug!("add: {} {}", first.get(), second.get());
     let new_value = first.get() + second.get();
     first.set(new_value);
 }
 
 pub fn ld_reg_to_reg(target: &Cell<u8>, source: &Cell<u8>) {
+    debug!("ld_reg_to_reg: {}", source.get());
     let val = source.get();
     target.set(val);
 }
 
 /// Loads the memory pointed to by the next two bytes into a register
 pub fn ld_next_byte_to_reg(mem: Memory, pc: &Cell<u16>, reg: &Cell<u8>) {
-    println!("ld_next_byte {}", pc.get());
     let val = mem.read_byte(pc.get());
+    debug!("ld_next_byte_to_reg: {} {}", pc.get(), val);
     pc.increment(); 
     reg.set(val);
 }
