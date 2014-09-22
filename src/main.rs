@@ -58,7 +58,7 @@ impl Cpu {
     fn zero(&self, op_code: u8) {
         match low_nibble(op_code) {
             0x0 => ops::nop(),
-            0x6 => ops::ld_next_byte(self.mem, &self.reg.pc, &self.reg.b),
+            0x6 => ops::ld_next_byte_to_reg(self.mem, &self.reg.pc, &self.reg.b),
             _ => return
         }
     }

@@ -9,10 +9,13 @@ pub fn add(first: &Cell<u8>, second: &Cell<u8>) {
     first.set(new_value);
 }
 
-
+pub fn ld_reg_to_reg(target: &Cell<u8>, source: &Cell<u8>) {
+    let val = source.get();
+    target.set(val);
+}
 
 /// Loads the memory pointed to by the next two bytes into a register
-pub fn ld_next_byte(mem: Memory, pc: &Cell<u16>, reg: &Cell<u8>) {
+pub fn ld_next_byte_to_reg(mem: Memory, pc: &Cell<u16>, reg: &Cell<u8>) {
     println!("ld_next_byte {}", pc.get());
     let val = mem.read_byte(pc.get());
     pc.increment(); 
@@ -34,15 +37,26 @@ fn test_add_reg_with_reg() {
 }
 
 #[test]
-fn test_load_next_byte_into_register() {
+fn test_ld_next_byte_to_reg() {
     let mem = Memory::new();
     let pc = Cell::new(11);
     let reg = Cell::new(0);
 
     mem.write_byte(11, 0xFF);
 
-    ld_next_byte(mem, &pc, &reg);
+    ld_next_byte_to_reg(mem, &pc, &reg);
     assert!(reg.get() == 0xFF);
     assert!(pc.get() == 12);
 
+}
+
+#[test]
+fn test_ld_reg_to_reg() {
+    let target = Cell::new(5);
+    let source = Cell::new(10);
+
+    ld_reg_to_reg(&target, &source);
+
+    assert!(target.get() == 10);
+    assert!(source.get() == 10);
 }
