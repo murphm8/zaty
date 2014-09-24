@@ -18,6 +18,3 @@ fn main() {
         let clock_cycle = cpu.tick();
     }
 }
-
-
-
