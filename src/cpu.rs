@@ -5,6 +5,7 @@ use memory::low_nibble;
 use memory::high_nibble;
 use extensions::Incrementor;
 use ops::{mod};
+use std::num::One;
 
 
 pub struct Cpu {
@@ -55,10 +56,39 @@ struct Registers {
 impl Registers {
     fn new() -> Registers {
         return Registers{
-            a: Cell::new(0), b: Cell::new(0), c: Cell::new(0), d: Cell::new(0), e: Cell::new(0), f: Cell::new(0), h: Cell::new(0), l: Cell::new(0),
-            pc: Cell::new(0), sp: Cell::new(0),
-            m: Cell::new(0), t: Cell::new(0)
+            a: Cell::new(0),
+            b: Cell::new(0),
+            c: Cell::new(0),
+            d: Cell::new(0),
+            e: Cell::new(0),
+            f: Cell::new(0),
+            h: Cell::new(0),
+            l: Cell::new(0),
+
+            pc: Cell::new(0),
+            sp: Cell::new(0),
+
+            m: Cell::new(0),
+            t: Cell::new(0)
         }
     }
 }
 
+
+struct Register<T: Copy + Unsigned> {
+    val: Cell<T>
+}
+
+impl<T: Copy + Unsigned> Register<T> {
+    fn read(&self) -> T {
+        return self.val.get();
+    }
+
+    fn write(&self, i: T) {
+        self.val.set(i);
+    }
+
+    fn increment(&self) {
+        self.write(self.read() + One::one());
+    }
+}
