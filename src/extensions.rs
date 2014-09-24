@@ -1,17 +1,12 @@
 use std::cell::Cell;
+use std::num::One;
 
 pub trait Incrementor {
     fn increment(&self);
 }
 
-impl Incrementor for Cell<u8> {
+impl<T: Copy + Num> Incrementor for Cell<T> {
     fn increment(&self) {
-        self.set(self.get() + 1);
-    }
-}
-
-impl Incrementor for Cell<u16> {
-    fn increment(&self) {
-        self.set(self.get() + 1);
+        self.set(self.get() + One::one());
     }
 }
