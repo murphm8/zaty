@@ -1,27 +1,27 @@
-use std::cell::Cell;
 use memory::Memory;
 use extensions::Incrementor;
+use cpu::Register;
 
 /// Add the value of two registers and store it in the first register
-pub fn add(first: &Cell<u8>, second: &Cell<u8>) {
-    debug!("add: {} {}", first.get(), second.get());
-    let new_value = first.get() + second.get();
-    first.set(new_value);
+pub fn add(first: &mut Register<u8>, second: &Register<u8>) {
+    debug!("add: {} {}", first.read(), second.read());
+    let new_value = first.read() + second.read();
+    first.write(new_value);
 }
 
 /// Load the value from one register into another
-pub fn ld_reg_to_reg(target: &Cell<u8>, source: &Cell<u8>) {
-    debug!("ld_reg_to_reg: {}", source.get());
-    let val = source.get();
-    target.set(val);
+pub fn ld_reg_to_reg(target: &mut Register<u8>, source: &Register<u8>) {
+    debug!("ld_reg_to_reg: {}", source.read());
+    let val = source.read();
+    target.write(val);
 }
 
 /// Loads the memory pointed to by the next two bytes into a register
-pub fn ld_next_byte_to_reg(mem: Memory, pc: &Cell<u16>, reg: &Cell<u8>) {
-    let val = mem.read_byte(pc.get());
-    debug!("ld_next_byte_to_reg: {} {}", pc.get(), val);
+pub fn ld_next_byte_to_reg(mem: Memory, pc: &mut Register<u16>, reg: &mut Register<u8>) {
+    let val = mem.read_byte(pc.read());
+    debug!("ld_next_byte_to_reg: {} {}", pc.read(), val);
     pc.increment(); 
-    reg.set(val);
+    reg.write(val);
 }
 
 /// Performs no operation and consumes a cycle
@@ -31,34 +31,34 @@ pub fn nop() {
 
 #[test]
 fn test_add_reg_with_reg() {
-    let first = Cell::new(5);
-    let second = Cell::new(9);
+    let mut first = Register::new(5);
+    let mut second = Register::new(9);
 
-    add(&first, &second);
-    assert!(first.get() == 14);
+    add(&mut first, &second);
+    assert!(first.read() == 14);
 }
 
 #[test]
 fn test_ld_next_byte_to_reg() {
     let mem = Memory::new();
-    let pc = Cell::new(11);
-    let reg = Cell::new(0);
+    let mut pc = Register::new(11);
+    let mut reg = Register::new(0);
 
     mem.write_byte(11, 0xFF);
 
-    ld_next_byte_to_reg(mem, &pc, &reg);
-    assert!(reg.get() == 0xFF);
-    assert!(pc.get() == 12);
+    ld_next_byte_to_reg(mem, &mut pc, &mut reg);
+    assert!(reg.read() == 0xFF);
+    assert!(pc.read() == 12);
 
 }
 
 #[test]
 fn test_ld_reg_to_reg() {
-    let target = Cell::new(5);
-    let source = Cell::new(10);
+    let mut target = Register::new(5);
+    let mut source = Register::new(10);
 
-    ld_reg_to_reg(&target, &source);
+    ld_reg_to_reg(&mut target, &source);
 
-    assert!(target.get() == 10);
-    assert!(source.get() == 10);
+    assert!(target.read() == 10);
+    assert!(source.read() == 10);
 }

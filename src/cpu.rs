@@ -1,4 +1,3 @@
-use std::cell::Cell;
 use num::integer::Integer;
 use memory::Memory;
 use memory::low_nibble;
@@ -31,16 +30,16 @@ impl Cpu {
    
     /// Fetches the instruction pointed to by the program counter
     /// and increments the pc by 1
-    fn fetch_instruction(&self) -> u8 {
-        let instr = self.mem.read_byte(self.reg.pc.get());
+    fn fetch_instruction(&mut self) -> u8 {
+        let instr = self.mem.read_byte(self.reg.pc.val);
         self.reg.pc.increment();
         return instr;     
     }
 
-    fn zero(&self, op_code: u8) {
+    fn zero(&mut self, op_code: u8) {
         match low_nibble(op_code) {
             0x0 => ops::nop(),
-            0x6 => ops::ld_next_byte_to_reg(self.mem, &self.reg.pc, &self.reg.b),
+            0x6 => ops::ld_next_byte_to_reg(self.mem, &mut self.reg.pc, &mut self.reg.b),
             _ => return
         }
     }
@@ -48,47 +47,55 @@ impl Cpu {
 
 
 struct Registers {
-    a: Cell<u8>, b: Cell<u8>, c: Cell<u8>, d: Cell<u8>, e: Cell<u8>, f: Cell<u8>, h: Cell<u8>, l: Cell<u8>, // 8-bit registers
-    pc: Cell<u16>, sp: Cell<u16>, // 16-bit registers
-    m: Cell<u16>, t: Cell<u16> // clock
+    a: Register<u8>, b: Register<u8>, c: Register<u8>, 
+    d: Register<u8>, e: Register<u8>, f: Register<u8>, 
+    h: Register<u8>, l: Register<u8>, // 8-bit registers
+
+    pc: Register<u16>, sp: Register<u16>, // 16-bit registers
+    m: Register<u16>, t: Register<u16> // clock
 }
 
 impl Registers {
     fn new() -> Registers {
         return Registers{
-            a: Cell::new(0),
-            b: Cell::new(0),
-            c: Cell::new(0),
-            d: Cell::new(0),
-            e: Cell::new(0),
-            f: Cell::new(0),
-            h: Cell::new(0),
-            l: Cell::new(0),
+            a: Register::new(0),
+            b: Register::new(0),
+            c: Register::new(0),
+            d: Register::new(0),
+            e: Register::new(0),
+            f: Register::new(0),
+            h: Register::new(0),
+            l: Register::new(0),
 
-            pc: Cell::new(0),
-            sp: Cell::new(0),
+            pc: Register::new(0),
+            sp: Register::new(0),
 
-            m: Cell::new(0),
-            t: Cell::new(0)
+            m: Register::new(0),
+            t: Register::new(0)
         }
     }
 }
 
 
-struct Register<T: Copy + Unsigned> {
-    val: Cell<T>
+pub struct Register<T: Copy + Unsigned> {
+    val: T 
 }
 
 impl<T: Copy + Unsigned> Register<T> {
-    fn read(&self) -> T {
-        return self.val.get();
+    pub fn new(i: T) -> Register<T> {
+        return Register { val: i };
     }
 
-    fn write(&self, i: T) {
-        self.val.set(i);
+    pub fn read(&self) -> T {
+        return self.val;
     }
 
-    fn increment(&self) {
-        self.write(self.read() + One::one());
+    pub fn write(&mut self, i: T) {
+        self.val = i;
+    }
+
+    pub fn increment(&mut self) {
+        let i = self.val;
+        self.write(i + One::one());
     }
 }
