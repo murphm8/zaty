@@ -68,7 +68,7 @@ impl Registers {
             l: Register::new(0),
 
             pc: Register::new(0),
-            sp: Register::new(0),
+            sp: Register::new(0xFFFE),
 
             m: Register::new(0),
             t: Register::new(0)
@@ -98,4 +98,23 @@ impl<T: Copy + Unsigned> Register<T> {
         let i = self.val;
         self.write(i + One::one());
     }
+}
+
+#[test]
+fn test_Register_new() {
+    let reg: Register<u8> = Register::new(10);
+    assert!(reg.val == 10);
+}
+
+fn test_Register_read() {
+    let reg: Register<u32> = Register::new(5);
+
+    assert!(reg.read() == 5);
+}
+
+fn test_Register_write() {
+    let mut reg: Register<u16> = Register::new(483);
+    
+    reg.write(5);
+    assert!(reg.val == 5);
 }
