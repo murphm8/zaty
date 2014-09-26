@@ -67,7 +67,7 @@ impl Registers {
             h: Register::new(0),
             l: Register::new(0),
 
-            pc: Register::new(0),
+            pc: Register::new(0x100),
             sp: Register::new(0xFFFE),
 
             m: Register::new(0),
@@ -106,15 +106,23 @@ fn test_Register_new() {
     assert!(reg.val == 10);
 }
 
+#[test]
 fn test_Register_read() {
     let reg: Register<u32> = Register::new(5);
-
     assert!(reg.read() == 5);
 }
 
+#[test]
 fn test_Register_write() {
     let mut reg: Register<u16> = Register::new(483);
     
     reg.write(5);
     assert!(reg.val == 5);
+}
+
+#[test]
+fn test_Registers_new() {
+    let a = Registers::new();
+    assert!(a.pc.read() == 0x100);
+    assert!(a.sp.read() == 0xFFFE);
 }
