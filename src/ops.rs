@@ -17,7 +17,7 @@ pub fn ld_reg_to_reg(target: &mut Register<u8>, source: &Register<u8>) {
 }
 
 /// Loads the memory pointed to by the next two bytes into a register
-pub fn ld_next_byte_to_reg(mem: Memory, pc: &mut Register<u16>, reg: &mut Register<u8>) {
+pub fn ld_next_byte_to_reg(mem: &Memory, pc: &mut Register<u16>, reg: &mut Register<u8>) {
     let val = mem.read_byte(pc.read());
     debug!("ld_next_byte_to_reg: {} {}", pc.read(), val);
     pc.increment(); 
@@ -40,13 +40,13 @@ fn test_add_reg_with_reg() {
 
 #[test]
 fn test_ld_next_byte_to_reg() {
-    let mem = Memory::new();
+    let mut mem = Memory::new(65536);
     let mut pc = Register::new(11);
     let mut reg = Register::new(0);
 
     mem.write_byte(11, 0xFF);
 
-    ld_next_byte_to_reg(mem, &mut pc, &mut reg);
+    ld_next_byte_to_reg(&mem, &mut pc, &mut reg);
     assert!(reg.read() == 0xFF);
     assert!(pc.read() == 12);
 

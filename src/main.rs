@@ -11,7 +11,7 @@ mod extensions;
 mod cpu;
 
 fn main() {
-    let memory = Memory::new();
+    let memory = Memory::new(65536);
     let mut cpu = Cpu::new(memory);
 
     loop {

@@ -6,31 +6,31 @@ use std::cell::Cell;
 use std::path::Path;
 
 pub struct Memory {
-    mem: [Cell<u8>, ..65536] 
+    mem: Vec<u8> 
 }
 
 impl Memory {
-    pub fn new() -> Memory {
-        return Memory{ mem: [Cell::new(0), ..65536]} 
+    pub fn new(size: uint) -> Memory {
+        return Memory{ mem: Vec::from_elem(size, 0)} 
     }
 
     pub fn read_byte(&self, addr: u16) -> u8 {
-        return self.mem[addr as uint].get();
+        return self.mem[addr as uint];
     }
 
     pub fn read_word(&self, addr: u16) -> u16 {
-        let high_byte = self.mem[(addr + 1) as uint].get();
-        let low_byte = self.mem[addr as uint].get();
+        let high_byte = self.mem[(addr + 1) as uint];
+        let low_byte = self.mem[addr as uint];
         return ((high_byte as u16) << 8) + (low_byte as u16);
     }
 
-    pub fn write_byte(&self, addr: u16, data: u8) {
-        self.mem[addr as uint].set(data);
+    pub fn write_byte(&mut self, addr: u16, data: u8) {
+        *self.mem.get_mut(addr as uint) = data;
     }
 
-    pub fn write_word(&self, addr: u16, data: u16) {
-        self.mem[addr as uint].set(low_byte(data));
-        self.mem[(addr + 1) as uint].set(high_byte(data));
+    pub fn write_word(&mut self, addr: u16, data: u16) {
+        *self.mem.get_mut(addr as uint) = low_byte(data);
+        *self.mem.get_mut((addr + 1) as uint) = high_byte(data);
     }
 
     pub fn load_rom(&self, path: Path) {
@@ -93,58 +93,58 @@ fn test_pack_u16() {
 
 #[test]
 fn test_Memory_write_byte() {
-    let mut memory = Memory::new();
+    let mut memory = Memory::new(65536);
     let mut rng = rand::task_rng();
 
     for n in range_inclusive(0, 0xFFFF)
     {
         let num = rng.gen::<u8>();
         memory.write_byte(n, num);
-        assert!(memory.mem[n as uint].get() == num);
+        assert!(memory.mem[n as uint] == num);
     }
 }
 
 #[test]
 fn test_Memory_write_word() {
-    let mut memory = Memory::new();
+    let mut memory = Memory::new(65536);
     let mut rng = rand::task_rng();
 
     for n in range_step_inclusive(0, 0xFFFF, 2)
     {
         let num = rng.gen::<u16>();
         memory.write_word(n, num);
-        assert!(memory.mem[n as uint].get() == low_byte(num));
-        assert!(memory.mem[(n + 1) as uint].get() == high_byte(num));
+        assert!(memory.mem[n as uint] == low_byte(num));
+        assert!(memory.mem[(n + 1) as uint] == high_byte(num));
     }
 }
 
 #[test]
 fn test_Memory_read_byte() {
-    let mut memory = Memory::new();
+    let mut memory = Memory::new(65536);
     
-    memory.mem[0].set(0xF1);
+    *memory.mem.get_mut(0) = 0xF1;
     assert!(memory.read_byte(0) == 0xF1);
 
-    memory.mem[0xFFFF].set(0xAB);
+    *memory.mem.get_mut(0xFFFF) = 0xAB;
     assert!(memory.read_byte(0xFFFF) == 0xAB);
 
-    memory.mem[0xABAB].set(0xBB);
+    *memory.mem.get_mut(0xABAB) = 0xBB;
     assert!(memory.read_byte(0xABAB) == 0xBB);
 }
 
 #[test]
 fn test_Memory_read_word() {
-    let mut memory = Memory::new();
+    let mut memory = Memory::new(65536);
     
-    memory.mem[0].set(0xF1);
-    memory.mem[1].set(0xEA);
+    *memory.mem.get_mut(0) = 0xF1;
+    *memory.mem.get_mut(1) = 0xEA;
     assert!(memory.read_word(0) == 0xEAF1);
 
-    memory.mem[0xFFFE].set(0xBB);
-    memory.mem[0xFFFF].set(0xAB);
+    *memory.mem.get_mut(0xFFFE) = 0xBB;
+    *memory.mem.get_mut(0xFFFF) = 0xAB;
     assert!(memory.read_word(0xFFFE) == 0xABBB);
 
-    memory.mem[0xABAA].set(0x12);
-    memory.mem[0xABAB].set(0xBA);
+    *memory.mem.get_mut(0xABAA) = 0x12;
+    *memory.mem.get_mut(0xABAB) = 0xBA;
     assert!(memory.read_word(0xABAA) == 0xBA12);
 }
