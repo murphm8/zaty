@@ -22,8 +22,14 @@ impl Cpu {
         let instr = self.fetch_instruction(); 
         self.reg.pc.increment();
 
-        match high_nibble(instr) {
-            0x0 => self.zero(instr),
+        match instr {
+            0x00 => ops::nop(),
+            0x01 => ops::ld_next_two_byte_into_reg_pair(&self.mem, &mut self.reg.pc, &mut self.reg.b, &mut self.reg.c),
+            0x02 => ops::write_value_to_memory_at_address(&mut self.mem, self.reg.a.read(), self.reg.b.read(), self.reg.c.read()),
+            0x03 => ops::increment_register_pair(&mut self.reg.b, &mut self.reg.c),
+            0x04 => self.reg.b.increment(),
+            0x05 => self.reg.b.decrement(),
+            0x06 => ops::ld_immediate(&self.mem, &mut self.reg.pc, &mut self.reg.b),
             _ => return
         }
     }
@@ -34,14 +40,6 @@ impl Cpu {
         let instr = self.mem.read_byte(self.reg.pc.val);
         self.reg.pc.increment();
         return instr;     
-    }
-
-    fn zero(&mut self, op_code: u8) {
-        match low_nibble(op_code) {
-            0x0 => ops::nop(),
-            0x6 => ops::ld_next_byte_to_reg(&self.mem, &mut self.reg.pc, &mut self.reg.b),
-            _ => return
-        }
     }
 }
 
@@ -98,6 +96,56 @@ impl<T: Copy + Unsigned> Register<T> {
         let i = self.val;
         self.write(i + One::one());
     }
+
+    pub fn decrement(&mut self) {
+        let i = self.val;
+        self.write(i - One::one());
+    }
+}
+
+enum AddSubFlag {
+    Add,
+    Sub
+}
+
+trait FlagRegister<T: Copy + Unsigned> {
+    fn zero_flag(self) -> bool;
+    fn set_zero_flag(&mut self, val: bool);
+    fn add_sub_flag(self) -> AddSubFlag;
+    fn set_add_sub_flag(&mut self, val: AddSubFlag);
+    fn half_carry_flag(self);
+    fn set_half_carry_flag(&mut self, val: bool);
+    fn carry_flag(self) -> bool;
+    fn set_carry_flag(&mut self, val: bool);
+}
+
+impl<T: Copy + Unsigned> FlagRegister<T> for Register<T> {
+    fn zero_flag(self) -> bool {
+        return false;
+    }
+    
+    fn set_zero_flag(&mut self, val: bool) {
+    }
+
+    fn add_sub_flag(self) -> AddSubFlag {
+        return Add;
+    }
+
+    fn set_add_sub_flag(&mut self, val: AddSubFlag) {
+    }
+
+    fn half_carry_flag(self) {
+    }
+
+    fn set_half_carry_flag(&mut self, val: bool) {
+    }
+
+    fn carry_flag(self) -> bool {
+        return false;
+    }
+
+    fn set_carry_flag(&mut self, val: bool) {
+    }
 }
 
 #[test]
@@ -118,6 +166,24 @@ fn test_Register_write() {
     
     reg.write(5);
     assert!(reg.val == 5);
+}
+
+#[test]
+fn test_Register_increment() {
+    let mut reg: Register<u16> = Register::new(483);
+    
+    reg.increment();
+    assert!(reg.val == 484);
+
+}
+
+#[test]
+fn test_Register_decrement() {
+    let mut reg: Register<u16> = Register::new(401);
+    
+    reg.decrement();
+    assert!(reg.val == 400);
+
 }
 
 #[test]

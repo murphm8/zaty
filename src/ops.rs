@@ -17,11 +17,39 @@ pub fn ld_reg_to_reg(target: &mut Register<u8>, source: &Register<u8>) {
 }
 
 /// Loads the memory pointed to by the next two bytes into a register
-pub fn ld_next_byte_to_reg(mem: &Memory, pc: &mut Register<u16>, reg: &mut Register<u8>) {
+pub fn ld_immediate(mem: &Memory, pc: &mut Register<u16>, reg: &mut Register<u8>) {
     let val = mem.read_byte(pc.read());
     debug!("ld_next_byte_to_reg: {} {}", pc.read(), val);
     pc.increment(); 
     reg.write(val);
+}
+
+/// Loads the next two bytes into the passed in registers
+pub fn ld_next_two_byte_into_reg_pair(mem: &Memory, pc: &mut Register<u16>, 
+                                 hb: &mut Register<u8>, lb: &mut Register<u8>) {
+    let first = mem.read_byte(pc.read());
+    pc.increment();
+    let second = mem.read_byte(pc.read());
+    pc.increment();
+    
+    hb.write(first);
+    lb.write(second);
+}
+
+/// Writes the passed in value to memory at the address pointed to by combined address parameters
+pub fn write_value_to_memory_at_address(mem: &mut Memory, val: u8, addr_msb: u8, addr_lsb: u8) {
+   let addr = ((addr_msb as uint) << 8) + addr_lsb as uint;
+   mem.write_byte(addr as u16, val);
+}
+
+/// Increments the pair of registers as if they represent a 16-bit value
+pub fn increment_register_pair(msb: &mut Register<u8>,lsb: &mut Register<u8>) {
+    let incremented_val = ((msb.read() as uint) << 8) + lsb.read() as uint + 1;
+    msb.write(((incremented_val & 0xFF00) >> 8) as u8);
+    lsb.write((incremented_val & 0x00FF) as u8);
+}
+
+pub fn increment(reg: &mut Register<u8>) {
 }
 
 /// Performs no operation and consumes a cycle
@@ -39,14 +67,14 @@ fn test_add_reg_with_reg() {
 }
 
 #[test]
-fn test_ld_next_byte_to_reg() {
+fn test_ld_immediate() {
     let mut mem = Memory::new(65536);
     let mut pc = Register::new(11);
     let mut reg = Register::new(0);
 
     mem.write_byte(11, 0xFF);
 
-    ld_next_byte_to_reg(&mem, &mut pc, &mut reg);
+    ld_immediate(&mem, &mut pc, &mut reg);
     assert!(reg.read() == 0xFF);
     assert!(pc.read() == 12);
 
@@ -61,4 +89,51 @@ fn test_ld_reg_to_reg() {
 
     assert!(target.read() == 10);
     assert!(source.read() == 10);
+}
+
+#[test]
+fn test_ld_next_two_byte_into_reg_pair() {
+    let mut mem = Memory::new(65536);
+    let mut pc = Register::new(11);
+    let mut reg = Register::new(0);
+    let mut reg2 = Register::new(0);
+    
+    mem.write_byte(11, 0xDE);
+    mem.write_byte(12, 0xAD);
+
+    ld_next_two_byte_into_reg_pair(&mem, &mut pc, &mut reg, &mut reg2);
+    assert!(pc.read() == 13);
+    assert!(reg.read() == 0xDE);
+    assert!(reg2.read() == 0xAD);
+}
+
+#[test]
+fn test_write_value_to_memory_at_address() {
+    let mut mem = Memory::new(65536);
+    let mut msb = 0xFF;
+    let mut lsb = 0x11;
+    let val = 100;
+
+    write_value_to_memory_at_address(&mut mem, val, msb, lsb);
+
+    assert!(mem.read_byte(0xFF11) == val, "Memory does match what was written");
+}
+
+#[test]
+fn test_increment_register_pair() {
+    let mut msb = Register::new(0x11);
+    let mut lsb = Register::new(0x11);
+    
+    increment_register_pair(&mut msb, &mut lsb);
+
+    assert!(msb.read() == 0x11);
+    assert!(lsb.read() == 0x12);
+
+    let mut msb_2 = Register::new(0x10);
+    let mut lsb_2 = Register::new(0xFF);
+
+    increment_register_pair(&mut msb_2, &mut lsb_2);
+
+    assert!(msb_2.read() == 0x11);
+    assert!(lsb_2.read() == 0x00);
 }
