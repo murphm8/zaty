@@ -26,7 +26,7 @@ impl Cpu {
             0x00 => ops::nop(),
             0x01 => ops::ld_next_two_byte_into_reg_pair(&self.mem, &mut self.reg.pc, &mut self.reg.b, &mut self.reg.c),
             0x02 => ops::write_value_to_memory_at_address(&mut self.mem, self.reg.a.read(), self.reg.b.read(), self.reg.c.read()),
-            0x03 => ops::increment_register_pair(&mut self.reg.b, &mut self.reg.c),
+            0x03 => ops::increment_register_pair(&mut self.reg.b, &mut self.reg.c, &mut self.reg.f),
             0x04 => self.reg.b.increment(),
             0x05 => self.reg.b.decrement(),
             0x06 => ops::ld_immediate(&self.mem, &mut self.reg.pc, &mut self.reg.b),
@@ -46,7 +46,7 @@ impl Cpu {
 
 struct Registers {
     a: Register<u8>, b: Register<u8>, c: Register<u8>, 
-    d: Register<u8>, e: Register<u8>, f: Register<u8>, 
+    d: Register<u8>, e: Register<u8>, f: Register<Flags>, 
     h: Register<u8>, l: Register<u8>, // 8-bit registers
 
     pc: Register<u16>, sp: Register<u16>, // 16-bit registers
@@ -61,7 +61,7 @@ impl Registers {
             c: Register::new(0),
             d: Register::new(0),
             e: Register::new(0),
-            f: Register::new(0),
+            f: Register::new(Flags::empty()),
             h: Register::new(0),
             l: Register::new(0),
 
@@ -74,12 +74,11 @@ impl Registers {
     }
 }
 
-
-pub struct Register<T: Copy + Unsigned> {
+pub struct Register<T: Copy> {
     val: T 
 }
 
-impl<T: Copy + Unsigned> Register<T> {
+impl<T: Copy> Register<T> {
     pub fn new(i: T) -> Register<T> {
         return Register { val: i };
     }
@@ -91,7 +90,10 @@ impl<T: Copy + Unsigned> Register<T> {
     pub fn write(&mut self, i: T) {
         self.val = i;
     }
+}
 
+
+impl<T: Copy + Unsigned>  Register<T> {
     pub fn increment(&mut self) {
         let i = self.val;
         self.write(i + One::one());
@@ -103,50 +105,30 @@ impl<T: Copy + Unsigned> Register<T> {
     }
 }
 
-enum AddSubFlag {
-    Add,
-    Sub
+bitflags! {
+    flags Flags: u8 {
+        static ZeroFlag       = 0b10000000,
+        static AddFlag        = 0b01000000,
+        static HalfCarryFlag  = 0b00100000,
+        static CarryFlag      = 0b00010000,
+    }
 }
 
-trait FlagRegister<T: Copy + Unsigned> {
-    fn zero_flag(self) -> bool;
-    fn set_zero_flag(&mut self, val: bool);
-    fn add_sub_flag(self) -> AddSubFlag;
-    fn set_add_sub_flag(&mut self, val: AddSubFlag);
-    fn half_carry_flag(self);
-    fn set_half_carry_flag(&mut self, val: bool);
-    fn carry_flag(self) -> bool;
-    fn set_carry_flag(&mut self, val: bool);
-}
+pub struct FlagRegister<T: Copy + Unsigned>(Register<T>);
 
-impl<T: Copy + Unsigned> FlagRegister<T> for Register<T> {
-    fn zero_flag(self) -> bool {
-        return false;
+impl FlagRegister<u8> {
+    pub fn new(i: u8) -> FlagRegister<u8> {
+        return FlagRegister(Register::new(i));   
     }
     
-    fn set_zero_flag(&mut self, val: bool) {
+    fn write(&mut self, i: Flags) {
     }
 
-    fn add_sub_flag(self) -> AddSubFlag {
-        return Add;
-    }
-
-    fn set_add_sub_flag(&mut self, val: AddSubFlag) {
-    }
-
-    fn half_carry_flag(self) {
-    }
-
-    fn set_half_carry_flag(&mut self, val: bool) {
-    }
-
-    fn carry_flag(self) -> bool {
-        return false;
-    }
-
-    fn set_carry_flag(&mut self, val: bool) {
+    fn read(self) -> u8 {
+        return self.0.read();
     }
 }
+
 
 #[test]
 fn test_Register_new() {

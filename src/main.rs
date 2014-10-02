@@ -1,3 +1,5 @@
+#![feature(tuple_indexing)]
+#![feature(struct_inherit)]
 #![feature(phase)]
 #[phase(plugin, link)] extern crate log;
 extern crate num;
