@@ -1,6 +1,6 @@
 use memory::Memory;
 use extensions::Incrementor;
-use cpu::{Register, Flags, CarryFlag};
+use cpu::{Register, Flags, CarryFlag, HalfCarryFlag, ZeroFlag, SubtractFlag};
 
 /// Add the value of two registers and store it in the first register
 pub fn add(first: &mut Register<u8>, second: &Register<u8>, freg: &mut Register<Flags>) {
@@ -50,18 +50,106 @@ pub fn write_value_to_memory_at_address(mem: &mut Memory, val: u8, addr_msb: u8,
 }
 
 /// Increments the pair of registers as if they represent a 16-bit value
-pub fn increment_register_pair(msb: &mut Register<u8>,lsb: &mut Register<u8>, freg: &mut Register<Flags>) {
+pub fn increment_register_pair(msb: &mut Register<u8>,lsb: &mut Register<u8>) {
     let incremented_val = ((msb.read() as uint) << 8) + lsb.read() as uint + 1;
     msb.write(((incremented_val & 0xFF00) >> 8) as u8);
     lsb.write((incremented_val & 0x00FF) as u8);
 }
 
-pub fn increment(reg: &mut Register<u8>) {
+/// Increment register by 1
+/// Set ZeroFlag if result is 0
+/// Set HalfCarryFlag if there is a carry from bit 3
+pub fn increment_register(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
+    let val = reg.read();
+    let mut flags = Flags::empty();
+
+    if (val == 0x0F) {
+        flags = HalfCarryFlag;
+    }
+    reg.increment();
+
+    if (reg.read() == 0) {
+        flags = flags | ZeroFlag;
+    }
+    freg.write(flags);
+}
+
+/// Decrement register by 1
+/// Set ZeroFlag if result is 0
+/// Set SubtractFlag
+/// Set HalfCarryFlag if there is no borrow from bit 4
+pub fn decrement_register(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
+    let val = reg.read();
+    let mut flags = SubtractFlag;
+
+    if ((val & 0x0F) > 0) {
+        flags = flags | HalfCarryFlag;
+    }
+    
+    reg.decrement();
+
+    if (reg.read() == 0x00) {
+        flags = flags | ZeroFlag;
+    }
+    freg.write(flags);
 }
 
 /// Performs no operation and consumes a cycle
 pub fn nop() {
     println!("nop");
+}
+
+#[test]
+fn test_decrement_register() {
+    let mut reg = Register::new(1);
+    let mut freg = Register::new(Flags::empty());
+
+    decrement_register(&mut reg, &mut freg);
+
+    assert!(reg.read() == 0);
+    assert!(freg.read() == ZeroFlag | SubtractFlag | HalfCarryFlag);
+
+    reg.write(0xF1);
+    freg.write(Flags::empty());
+
+    decrement_register(&mut reg, &mut freg);
+
+    assert!(reg.read() == 0xF0);
+    assert!(freg.read() == SubtractFlag | HalfCarryFlag);
+
+    reg.write(0xF0);
+    freg.write(Flags::empty());
+
+    decrement_register(&mut reg, &mut freg);
+
+    assert!(reg.read() == 0xEF);
+    assert!(freg.read() == SubtractFlag);
+}
+
+#[test]
+fn test_increment_register() {
+    let mut reg = Register::new(1);
+    let mut freg = Register::new(Flags::empty());
+
+    increment_register(&mut reg, &mut freg);
+
+    assert!(reg.read() == 2);
+    assert!(freg.read() == Flags::empty());
+
+    let mut regb = Register::new(0x0F);
+
+    increment_register(&mut regb, &mut freg);
+    
+    assert!(regb.read() == 0x10);
+    assert!(freg.read() == HalfCarryFlag);
+
+    let mut regc = Register::new(0xFF);
+    freg.write(Flags::empty());
+
+    increment_register(&mut regc, &mut freg);
+
+    assert!(regc.read() == 0x00);
+    assert!(freg.read() == ZeroFlag);
 }
 
 #[test]
@@ -140,18 +228,16 @@ fn test_write_value_to_memory_at_address() {
 fn test_increment_register_pair() {
     let mut msb = Register::new(0x11);
     let mut lsb = Register::new(0x11);
-    let mut flag = Register::new(Flags::empty());
     
-    increment_register_pair(&mut msb, &mut lsb, &mut flag);
+    increment_register_pair(&mut msb, &mut lsb);
 
     assert!(msb.read() == 0x11);
     assert!(lsb.read() == 0x12);
 
     let mut msb_2 = Register::new(0x10);
     let mut lsb_2 = Register::new(0xFF);
-    let mut flag2 = Register::new(Flags::empty());
 
-    increment_register_pair(&mut msb_2, &mut lsb_2, &mut flag2);
+    increment_register_pair(&mut msb_2, &mut lsb_2);
 
     assert!(msb_2.read() == 0x11);
     assert!(lsb_2.read() == 0x00);

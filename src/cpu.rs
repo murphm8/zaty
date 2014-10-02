@@ -26,9 +26,9 @@ impl Cpu {
             0x00 => ops::nop(),
             0x01 => ops::ld_next_two_byte_into_reg_pair(&self.mem, &mut self.reg.pc, &mut self.reg.b, &mut self.reg.c),
             0x02 => ops::write_value_to_memory_at_address(&mut self.mem, self.reg.a.read(), self.reg.b.read(), self.reg.c.read()),
-            0x03 => ops::increment_register_pair(&mut self.reg.b, &mut self.reg.c, &mut self.reg.f),
-            0x04 => self.reg.b.increment(),
-            0x05 => self.reg.b.decrement(),
+            0x03 => ops::increment_register_pair(&mut self.reg.b, &mut self.reg.c),
+            0x04 => ops::increment_register(&mut self.reg.b, &mut self.reg.f),
+            0x05 => ops::decrement_register(&mut self.reg.b, &mut self.reg.f),
             0x06 => ops::ld_immediate(&self.mem, &mut self.reg.pc, &mut self.reg.b),
             _ => return
         }
@@ -108,27 +108,11 @@ impl<T: Copy + Unsigned>  Register<T> {
 bitflags! {
     flags Flags: u8 {
         static ZeroFlag       = 0b10000000,
-        static AddFlag        = 0b01000000,
+        static SubtractFlag        = 0b01000000,
         static HalfCarryFlag  = 0b00100000,
         static CarryFlag      = 0b00010000,
     }
 }
-
-pub struct FlagRegister<T: Copy + Unsigned>(Register<T>);
-
-impl FlagRegister<u8> {
-    pub fn new(i: u8) -> FlagRegister<u8> {
-        return FlagRegister(Register::new(i));   
-    }
-    
-    fn write(&mut self, i: Flags) {
-    }
-
-    fn read(self) -> u8 {
-        return self.0.read();
-    }
-}
-
 
 #[test]
 fn test_Register_new() {
