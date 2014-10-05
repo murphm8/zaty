@@ -54,7 +54,7 @@ pub fn high_byte(num: u16) -> u8 {
 }
 
 pub fn pack_u16(high: u8, low: u8) -> u16 {
-    return (high as u16 << 4) + low as u16;
+    return (high as u16 << 8) + low as u16;
 }
 
 #[test]
@@ -86,8 +86,8 @@ fn test_high_byte() {
 
 #[test]
 fn test_pack_u16() {
-    assert!(pack_u16(0xA, 0xE) == 0xAE);
-    assert!(pack_u16(0xF, 0x0) == 0xF0);
+    assert!(pack_u16(0xAB, 0xEF)== 0xABEF);
+    assert!(pack_u16(0xF, 0x01) == 0xF01);
     assert!(pack_u16(0x0, 0xF) == 0x0F);
 }
 
