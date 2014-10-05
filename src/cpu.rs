@@ -20,7 +20,6 @@ impl Cpu {
     /// Execute a cycle on the cpu
     pub fn tick(&mut self) {
         let instr = self.fetch_instruction(); 
-        self.reg.pc.increment();
 
         match instr {
             0x00 => ops::nop(),
@@ -30,6 +29,7 @@ impl Cpu {
             0x04 => ops::increment_register(&mut self.reg.b, &mut self.reg.f),
             0x05 => ops::decrement_register(&mut self.reg.b, &mut self.reg.f),
             0x06 => ops::ld_immediate(&self.mem, &mut self.reg.pc, &mut self.reg.b),
+            0x07 => ops::rotate_left_with_carry(&mut self.reg.a, &mut self.reg.f),
             _ => return
         }
     }
@@ -108,7 +108,7 @@ impl<T: Copy + Unsigned>  Register<T> {
 bitflags! {
     flags Flags: u8 {
         static ZeroFlag       = 0b10000000,
-        static SubtractFlag        = 0b01000000,
+        static SubtractFlag   = 0b01000000,
         static HalfCarryFlag  = 0b00100000,
         static CarryFlag      = 0b00010000,
     }

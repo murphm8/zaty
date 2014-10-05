@@ -94,9 +94,55 @@ pub fn decrement_register(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
     freg.write(flags);
 }
 
+/// Rotate register left
+/// Set ZeroFlag if result is zero
+/// Set CarryFlag if bit 7 is 1
+pub fn rotate_left_with_carry(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
+    let val = reg.read();
+
+    if (val == 0) {
+        freg.write(ZeroFlag);
+        return;
+    }
+
+    if (val & 0x80 != 0) {
+        freg.write(CarryFlag);
+    }
+
+    reg.write(val << 1);
+}
+
 /// Performs no operation and consumes a cycle
 pub fn nop() {
     println!("nop");
+}
+
+#[test]
+fn test_rotate_left_with_carry() {
+    let mut reg = Register::new(0x0F);
+    let mut freg = Register::new(Flags::empty());
+
+    rotate_left_with_carry(&mut reg, &mut freg);
+    
+    // Rotate should happen
+    assert!(reg.read() == 0x1E);
+    assert!(freg.read() == Flags::empty());
+    
+    let mut regb = Register::new(0x00);
+
+    rotate_left_with_carry(&mut regb, &mut freg);
+
+    // Zero should return zero with ZeroFlag
+    assert!(regb.read() == 0x00);
+    assert!(freg.read() == ZeroFlag);
+
+    let mut regc = Register::new(0xFF);
+
+    rotate_left_with_carry(&mut regc, &mut freg);
+
+    // Carry should get set
+    assert!(regc.read() == 0xFE);
+    assert!(freg.read() == CarryFlag);
 }
 
 #[test]
