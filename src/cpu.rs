@@ -30,6 +30,7 @@ impl Cpu {
             0x05 => ops::decrement_register(&mut self.reg.b, &mut self.reg.f),
             0x06 => ops::ld_immediate(&self.mem, &mut self.reg.pc, &mut self.reg.b),
             0x07 => ops::rotate_left_with_carry(&mut self.reg.a, &mut self.reg.f),
+            0x08 => ops::write_sp_to_address_immediate(&mut self.mem, &mut self.reg.pc, &self.reg.sp),
             _ => return
         }
     }

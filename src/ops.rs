@@ -1,4 +1,4 @@
-use memory::Memory;
+use memory::{Memory, pack_u16};
 use extensions::Incrementor;
 use cpu::{Register, Flags, CarryFlag, HalfCarryFlag, ZeroFlag, SubtractFlag};
 
@@ -112,9 +112,36 @@ pub fn rotate_left_with_carry(reg: &mut Register<u8>, freg: &mut Register<Flags>
     reg.write(val << 1);
 }
 
+/// Write sp to address with value of next two bytes
+pub fn write_sp_to_address_immediate(mem: &mut Memory, pc: &mut Register<u16>, sp: &Register<u16>){
+    let msb = mem.read_byte(pc.read());
+    pc.increment();
+    let lsb = mem.read_byte(pc.read());
+    pc.increment();
+
+    let addr = pack_u16(msb, lsb);
+    println!("Writing {} to {}", sp.read(), addr);
+    mem.write_word(addr, sp.read());
+}
+
 /// Performs no operation and consumes a cycle
 pub fn nop() {
     println!("nop");
+}
+
+#[test]
+fn test_write_stack_pointer_to_address_immediate() {
+    let mut sp = Register::new(0xBEEF);
+    let mut pc = Register::new(0x111);
+    let mut mem = Memory::new(65647);
+
+    mem.write_byte(0x111, 0xDE);
+    mem.write_byte(0x112, 0xAD);
+
+    write_sp_to_address_immediate(&mut mem, &mut pc, &sp);
+    println!("{}", mem.read_word(0xDEAD));
+    assert!(pc.read() == 0x113);
+    assert!(mem.read_word(0xDEAD) == 0xBEEF);
 }
 
 #[test]
