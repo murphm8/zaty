@@ -1,4 +1,4 @@
-use memory::{Memory, pack_u16};
+use memory::{Memory, pack_u16, high_byte, low_byte};
 use extensions::Incrementor;
 use cpu::{Register, Flags, CarryFlag, HalfCarryFlag, ZeroFlag, SubtractFlag};
 
@@ -34,13 +34,12 @@ pub fn ld_immediate(mem: &Memory, pc: &mut Register<u16>, reg: &mut Register<u8>
 /// Loads the next two bytes into the passed in registers
 pub fn ld_next_two_byte_into_reg_pair(mem: &Memory, pc: &mut Register<u16>, 
                                  hb: &mut Register<u8>, lb: &mut Register<u8>) {
-    let first = mem.read_byte(pc.read());
+    let val = mem.read_word(pc.read());
     pc.increment();
-    let second = mem.read_byte(pc.read());
     pc.increment();
-    
-    hb.write(first);
-    lb.write(second);
+
+    hb.write(high_byte(val));
+    lb.write(low_byte(val));
 }
 
 /// Writes the passed in value to memory at the address pointed to by combined address parameters
@@ -52,8 +51,8 @@ pub fn write_value_to_memory_at_address(mem: &mut Memory, val: u8, addr_msb: u8,
 /// Increments the pair of registers as if they represent a 16-bit value
 pub fn increment_register_pair(msb: &mut Register<u8>,lsb: &mut Register<u8>) {
     let incremented_val = ((msb.read() as uint) << 8) + lsb.read() as uint + 1;
-    msb.write(((incremented_val & 0xFF00) >> 8) as u8);
-    lsb.write((incremented_val & 0x00FF) as u8);
+    msb.write(high_byte(incremented_val as u16));
+    lsb.write(low_byte(incremented_val as u16));
 }
 
 /// Increment register by 1
@@ -114,12 +113,10 @@ pub fn rotate_left_with_carry(reg: &mut Register<u8>, freg: &mut Register<Flags>
 
 /// Write sp to address with value of next two bytes
 pub fn write_sp_to_address_immediate(mem: &mut Memory, pc: &mut Register<u16>, sp: &Register<u16>){
-    let msb = mem.read_byte(pc.read());
+    let addr = mem.read_word(pc.read());
     pc.increment();
-    let lsb = mem.read_byte(pc.read());
     pc.increment();
 
-    let addr = pack_u16(msb, lsb);
     println!("Writing {} to {}", sp.read(), addr);
     mem.write_word(addr, sp.read());
 }
@@ -130,16 +127,41 @@ pub fn nop() {
 }
 
 #[test]
+fn test_add_register_pair_to_register_pair() {
+    let mut rega = Register::new(0x11);
+    let mut regb = Register::new(0x11);
+
+    let mut reg1 = Register::new(0x11);
+    let mut reg2 = Register::new(0x11);
+
+    let mut freg = Register::new(ZeroFlag);
+
+    // Basic add make sure ZeroFlag isn't affected
+    add_register_pair_to_register_pair(&mut rega, &mut regb, reg1, reg2, &mut freg);
+
+    assert!(pack_u16(rega.read(), regb.read()) == 0x2222);
+    assert!(freg.read() == ZeroFlag);
+
+    rega.write(0xAB);
+    regb.write(0xFE);
+    reg1.write(0x12);
+    reg2.write(0x12);
+    
+    // Carry from bit 11
+    add_register_pair_to_register_pair(&mut rega, &mut regb, reg1, reg2, &mut freg);
+
+}
+
+#[test]
 fn test_write_stack_pointer_to_address_immediate() {
     let mut sp = Register::new(0xBEEF);
     let mut pc = Register::new(0x111);
     let mut mem = Memory::new(65647);
 
-    mem.write_byte(0x111, 0xDE);
-    mem.write_byte(0x112, 0xAD);
+    mem.write_byte(0x111, 0xAD);
+    mem.write_byte(0x112, 0xDE);
 
     write_sp_to_address_immediate(&mut mem, &mut pc, &sp);
-    println!("{}", mem.read_word(0xDEAD));
     assert!(pc.read() == 0x113);
     assert!(mem.read_word(0xDEAD) == 0xBEEF);
 }
@@ -250,10 +272,10 @@ fn test_ld_immediate() {
     let mut pc = Register::new(11);
     let mut reg = Register::new(0);
 
-    mem.write_byte(11, 0xFF);
+    mem.write_byte(11, 0xFA);
 
     ld_immediate(&mem, &mut pc, &mut reg);
-    assert!(reg.read() == 0xFF);
+    assert!(reg.read() == 0xFA);
     assert!(pc.read() == 12);
 
 }
@@ -276,13 +298,12 @@ fn test_ld_next_two_byte_into_reg_pair() {
     let mut reg = Register::new(0);
     let mut reg2 = Register::new(0);
     
-    mem.write_byte(11, 0xDE);
-    mem.write_byte(12, 0xAD);
+    mem.write_word(11, 0xDEAB);
 
     ld_next_two_byte_into_reg_pair(&mem, &mut pc, &mut reg, &mut reg2);
     assert!(pc.read() == 13);
     assert!(reg.read() == 0xDE);
-    assert!(reg2.read() == 0xAD);
+    assert!(reg2.read() == 0xAB);
 }
 
 #[test]
