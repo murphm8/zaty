@@ -31,6 +31,7 @@ impl Cpu {
             0x06 => ops::ld_immediate(&self.mem, &mut self.reg.pc, &mut self.reg.b),
             0x07 => ops::rotate_left_with_carry(&mut self.reg.a, &mut self.reg.f),
             0x08 => ops::write_sp_to_address_immediate(&mut self.mem, &mut self.reg.pc, &self.reg.sp),
+            0x09 => ops::add_register_pair_to_register_pair(&mut self.reg.h, &mut self.reg.l, &self.reg.b, &self.reg.c, &mut self.reg.f),
             _ => return
         }
     }
