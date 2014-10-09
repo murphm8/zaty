@@ -37,7 +37,7 @@ pub fn ld_next_two_byte_into_reg_pair(mem: &Memory, pc: &mut Register<u16>,
     let val = mem.read_word(pc.read());
     pc.increment();
     pc.increment();
-
+    debug!("ld_next_two_bytes_into_reg_pair: {}", val);
     hb.write(high_byte(val));
     lb.write(low_byte(val));
 }
@@ -146,6 +146,27 @@ pub fn add_register_pair_to_register_pair(rega: &mut Register<u8>, regb: &mut Re
     rega.write(high_byte(sum));
     regb.write(low_byte(sum));
     freg.write(flags);
+}
+
+pub fn ld_a_from_reg_pair_as_address(mem: &Memory, rega: &mut Register<u8>, reg1: &Register<u8>, reg2: &Register<u8>) {
+    let addr = pack_u16(reg1.read(), reg2.read());
+    let val = mem.read_byte(addr);
+    rega.write(val);
+}
+
+#[test]
+fn test_ld_a_from_reg_pair_as_address() {
+    let mut mem = Memory::new(65000);
+    let mut rega = Register::new(0x00);
+
+    let mut reg1 = Register::new(0x12);
+    let mut reg2 = Register::new(0x34);
+
+    mem.write_byte(0x1234, 0xAA);
+
+    ld_a_from_reg_pair_as_address(&mem, &mut rega, &reg1, &reg2);
+
+    assert!(rega.read() == 0xAA);
 }
 
 #[test]
