@@ -34,6 +34,10 @@ impl Cpu {
             0x09 => ops::add_register_pair_to_register_pair(&mut self.reg.h, &mut self.reg.l, &self.reg.b, &self.reg.c, &mut self.reg.f),
             0x0A => ops::ld_a_from_reg_pair_as_address(&self.mem, &mut self.reg.a, &mut self.reg.b, &mut self.reg.c),
             0x0B => ops::decrement_register_pair(&mut self.reg.b, &mut self.reg.c),
+            0x0C => ops::increment_register(&mut self.reg.c, &mut self.reg.f),
+            0x0D => ops::decrement_register(&mut self.reg.c, &mut self.reg.f),
+            0x0E => ops::ld_immediate(&self.mem, &mut self.reg.pc, &mut self.reg.c),
+            0x0F => ops::rotate_right_with_carry(&mut self.reg.a, &mut self.reg.f),
             _ => return
         }
     }

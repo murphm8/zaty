@@ -162,6 +162,36 @@ pub fn decrement_register_pair(reg1: &mut Register<u8>, reg2: &mut Register<u8>)
     reg2.write(low_byte(ans));
 }
 
+pub fn rotate_right_with_carry(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
+    let val = reg.read();
+
+    if (val == 0) {
+        freg.write(ZeroFlag);
+    } else {
+        if (val & 0x01 == 1) {
+            freg.write(CarryFlag);
+            reg.write(val >> 1);
+        }
+    }
+}
+
+#[test]
+fn test_rotate_right_with_carry() {
+    let mut reg = Register::new(0x99);
+    let mut freg = Register::new(SubtractFlag | HalfCarryFlag);
+
+    rotate_right_with_carry(&mut reg, &mut freg);
+
+    assert!(reg.read() == 0x4C);
+    assert!(freg.read() == CarryFlag);
+
+    reg.write(0x0);
+    rotate_right_with_carry(&mut reg, &mut freg);
+
+    assert!(reg.read() == 0x0);
+    assert!(freg.read() == ZeroFlag);
+}
+
 #[test]
 fn test_decrement_register_pair() {
     let mut reg1 = Register::new(0x70);
