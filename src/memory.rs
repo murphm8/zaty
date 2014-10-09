@@ -2,7 +2,6 @@ use std::rand::Rng;
 use std::rand;
 use std::iter::range_inclusive;
 use std::iter::range_step_inclusive;
-use std::cell::Cell;
 use std::path::Path;
 
 pub struct Memory {
@@ -31,9 +30,6 @@ impl Memory {
     pub fn write_word(&mut self, addr: u16, data: u16) {
         *self.mem.get_mut(addr as uint) = low_byte(data);
         *self.mem.get_mut((addr + 1) as uint) = high_byte(data);
-    }
-
-    pub fn load_rom(&self, path: Path) {
     }
 }
 
@@ -92,7 +88,7 @@ fn test_pack_u16() {
 }
 
 #[test]
-fn test_Memory_write_byte() {
+fn test_memory_write_byte() {
     let mut memory = Memory::new(65536);
     let mut rng = rand::task_rng();
 
@@ -105,7 +101,7 @@ fn test_Memory_write_byte() {
 }
 
 #[test]
-fn test_Memory_write_word() {
+fn test_memory_write_word() {
     let mut memory = Memory::new(65536);
     let mut rng = rand::task_rng();
 
@@ -119,7 +115,7 @@ fn test_Memory_write_word() {
 }
 
 #[test]
-fn test_Memory_read_byte() {
+fn test_memory_read_byte() {
     let mut memory = Memory::new(65536);
     
     *memory.mem.get_mut(0) = 0xF1;
@@ -133,7 +129,7 @@ fn test_Memory_read_byte() {
 }
 
 #[test]
-fn test_Memory_read_word() {
+fn test_memory_read_word() {
     let mut memory = Memory::new(65536);
     
     *memory.mem.get_mut(0) = 0xF1;

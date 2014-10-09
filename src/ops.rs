@@ -9,7 +9,7 @@ pub fn add(first: &mut Register<u8>, second: &Register<u8>, freg: &mut Register<
     first.write(new_value);
 
     let mut flags = Flags::empty();
-    if (new_value < first.read() || new_value < second.read()) {
+    if new_value < first.read() || new_value < second.read() {
         // Carry
         flags = flags | CarryFlag
     }
@@ -62,12 +62,12 @@ pub fn increment_register(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
     let val = reg.read();
     let mut flags = Flags::empty();
 
-    if (val == 0x0F) {
+    if val == 0x0F {
         flags = HalfCarryFlag;
     }
     reg.increment();
 
-    if (reg.read() == 0) {
+    if reg.read() == 0 {
         flags = flags | ZeroFlag;
     }
     freg.write(flags);
@@ -81,13 +81,13 @@ pub fn decrement_register(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
     let val = reg.read();
     let mut flags = SubtractFlag;
 
-    if ((val & 0x0F) > 0) {
+    if (val & 0x0F) > 0 {
         flags = flags | HalfCarryFlag;
     }
     
     reg.decrement();
 
-    if (reg.read() == 0x00) {
+    if reg.read() == 0x00 {
         flags = flags | ZeroFlag;
     }
     freg.write(flags);
@@ -99,12 +99,12 @@ pub fn decrement_register(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
 pub fn rotate_left_with_carry(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
     let val = reg.read();
 
-    if (val == 0) {
+    if val == 0 {
         freg.write(ZeroFlag);
         return;
     }
 
-    if (val & 0x80 != 0) {
+    if val & 0x80 != 0 {
         freg.write(CarryFlag);
     }
 
@@ -117,13 +117,13 @@ pub fn write_sp_to_address_immediate(mem: &mut Memory, pc: &mut Register<u16>, s
     pc.increment();
     pc.increment();
 
-    println!("Writing {} to {}", sp.read(), addr);
+    debug!("Writing {} to {}", sp.read(), addr);
     mem.write_word(addr, sp.read());
 }
 
 /// Performs no operation and consumes a cycle
 pub fn nop() {
-    println!("nop");
+    debug!("nop");
 }
 
 pub fn add_register_pair_to_register_pair(rega: &mut Register<u8>, regb: &mut Register<u8>, reg1: &Register<u8>, reg2: &Register<u8>, freg: &mut Register<Flags>) {
@@ -135,11 +135,11 @@ pub fn add_register_pair_to_register_pair(rega: &mut Register<u8>, regb: &mut Re
     // Reset subtract flag, leave ZeroFlag alone
     let mut flags = freg.read();
 
-    if (high_nibble(rega.read()) + high_nibble(reg1.read()) > 15) {
+    if high_nibble(rega.read()) + high_nibble(reg1.read()) > 15 {
         flags = flags | CarryFlag
     }
 
-    if (low_nibble(rega.read()) + low_nibble(reg1.read()) > 15) {
+    if low_nibble(rega.read()) + low_nibble(reg1.read()) > 15 {
         flags = flags | HalfCarryFlag;
     }
 
@@ -165,10 +165,10 @@ pub fn decrement_register_pair(reg1: &mut Register<u8>, reg2: &mut Register<u8>)
 pub fn rotate_right_with_carry(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
     let val = reg.read();
 
-    if (val == 0) {
+    if val == 0 {
         freg.write(ZeroFlag);
     } else {
-        if (val & 0x01 == 1) {
+        if val & 0x01 == 1 {
             freg.write(CarryFlag);
             reg.write(val >> 1);
         }
@@ -357,13 +357,13 @@ fn test_increment_register() {
 
 #[test]
 fn test_add_reg_with_reg() {
-    let mut first = Register::new(5);
-    let mut second = Register::new(9);
-    let mut flags = Register::new(Flags::empty());
+    let mut first = Register::new(0x05);
+    let mut second = Register::new(0x09);
+    let mut flags = Register::new(SubtractFlag);
 
     add(&mut first, &second, &mut flags);
-    assert!(first.read() == 14);
-    assert!(flags.read() == Flags::empty());
+    assert!(first.read() == 14, "Expected: {}, Actual: {}", "14", first.read());
+    assert!(flags.read() == HalfCarryFlag, "HalfCarry should be set");
 
     let mut a = Register::new(0xFA);
     let mut b = Register::new(0x07);
@@ -371,7 +371,15 @@ fn test_add_reg_with_reg() {
     add(&mut a, &b, &mut flags);
 
     assert!(a.read() == 0x01);
-    assert!(flags.read().contains(CarryFlag));
+    assert!(flags.read() == CarryFlag | HalfCarryFlag, "HalfCarry and CarryFlag should be set");
+
+    a.write(0);
+    b.write(0);
+
+    add(&mut a, &b, &mut flags);
+
+    assert!(a.read() == 0x0);
+    assert!(flags.read() == ZeroFlag);
 }
 
 #[test]
