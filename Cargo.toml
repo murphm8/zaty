@@ -7,3 +7,6 @@ authors = ["Matt Murphy <matthew.john.murphy@gmail.com>"]
 [[bin]]
 name = "zaty"
 path = "src/main.rs"
+
+[dependencies.glfw]
+git = "https://github.com/bjz/glfw-rs.git"
