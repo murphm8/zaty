@@ -154,6 +154,25 @@ pub fn ld_a_from_reg_pair_as_address(mem: &Memory, rega: &mut Register<u8>, reg1
     rega.write(val);
 }
 
+pub fn decrement_register_pair(reg1: &mut Register<u8>, reg2: &mut Register<u8>) {
+    let val = pack_u16(reg1.read(), reg2.read());
+    let ans = val - 1;
+
+    reg1.write(high_byte(ans));
+    reg2.write(low_byte(ans));
+}
+
+#[test]
+fn test_decrement_register_pair() {
+    let mut reg1 = Register::new(0x70);
+    let mut reg2 = Register::new(0x00);
+
+    decrement_register_pair(&mut reg1, &mut reg2);
+
+    assert!(reg1.read() == 0x6F);
+    assert!(reg2.read() == 0xFF);
+}
+
 #[test]
 fn test_ld_a_from_reg_pair_as_address() {
     let mut mem = Memory::new(65000);

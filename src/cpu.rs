@@ -33,6 +33,7 @@ impl Cpu {
             0x08 => ops::write_sp_to_address_immediate(&mut self.mem, &mut self.reg.pc, &self.reg.sp),
             0x09 => ops::add_register_pair_to_register_pair(&mut self.reg.h, &mut self.reg.l, &self.reg.b, &self.reg.c, &mut self.reg.f),
             0x0A => ops::ld_a_from_reg_pair_as_address(&self.mem, &mut self.reg.a, &mut self.reg.b, &mut self.reg.c),
+            0x0B => ops::decrement_register_pair(&mut self.reg.b, &mut self.reg.c),
             _ => return
         }
     }
