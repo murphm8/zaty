@@ -7,13 +7,13 @@ use ops::{mod};
 use std::num::One;
 
 
-pub struct Cpu {
+pub struct Cpu<'a> {
     reg: Registers,
-    mem: Memory
+    mem: &'a mut Memory
 }
 
-impl Cpu {
-    pub fn new(memory: Memory) -> Cpu {
+impl<'a> Cpu<'a> {
+    pub fn new(memory: &'a mut Memory) -> Cpu<'a> {
         return Cpu{reg: Registers::new(), mem: memory}
     }
    
@@ -23,20 +23,20 @@ impl Cpu {
 
         match instr {
             0x00 => ops::nop(),
-            0x01 => ops::ld_next_two_byte_into_reg_pair(&self.mem, &mut self.reg.pc, &mut self.reg.b, &mut self.reg.c),
-            0x02 => ops::write_value_to_memory_at_address(&mut self.mem, self.reg.a.read(), self.reg.b.read(), self.reg.c.read()),
+            0x01 => ops::ld_next_two_byte_into_reg_pair(self.mem, &mut self.reg.pc, &mut self.reg.b, &mut self.reg.c),
+            0x02 => ops::write_value_to_memory_at_address(self.mem, self.reg.a.read(), self.reg.b.read(), self.reg.c.read()),
             0x03 => ops::increment_register_pair(&mut self.reg.b, &mut self.reg.c),
             0x04 => ops::increment_register(&mut self.reg.b, &mut self.reg.f),
             0x05 => ops::decrement_register(&mut self.reg.b, &mut self.reg.f),
-            0x06 => ops::ld_immediate(&self.mem, &mut self.reg.pc, &mut self.reg.b),
+            0x06 => ops::ld_immediate(self.mem, &mut self.reg.pc, &mut self.reg.b),
             0x07 => ops::rotate_left_with_carry(&mut self.reg.a, &mut self.reg.f),
-            0x08 => ops::write_sp_to_address_immediate(&mut self.mem, &mut self.reg.pc, &self.reg.sp),
+            0x08 => ops::write_sp_to_address_immediate(self.mem, &mut self.reg.pc, &self.reg.sp),
             0x09 => ops::add_register_pair_to_register_pair(&mut self.reg.h, &mut self.reg.l, &self.reg.b, &self.reg.c, &mut self.reg.f),
-            0x0A => ops::ld_a_from_reg_pair_as_address(&self.mem, &mut self.reg.a, &mut self.reg.b, &mut self.reg.c),
+            0x0A => ops::ld_a_from_reg_pair_as_address(self.mem, &mut self.reg.a, &mut self.reg.b, &mut self.reg.c),
             0x0B => ops::decrement_register_pair(&mut self.reg.b, &mut self.reg.c),
             0x0C => ops::increment_register(&mut self.reg.c, &mut self.reg.f),
             0x0D => ops::decrement_register(&mut self.reg.c, &mut self.reg.f),
-            0x0E => ops::ld_immediate(&self.mem, &mut self.reg.pc, &mut self.reg.c),
+            0x0E => ops::ld_immediate(self.mem, &mut self.reg.pc, &mut self.reg.c),
             0x0F => ops::rotate_right_with_carry(&mut self.reg.a, &mut self.reg.f),
             _ => return
         }

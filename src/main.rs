@@ -16,8 +16,8 @@ mod extensions;
 mod cpu;
 
 fn main() {
-    let memory = Memory::new(65536);
-    let mut cpu = Cpu::new(memory);
+    let mut memory = Memory::new(65536);
+    let mut cpu = Cpu::new(&mut memory);
     let glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
 
     let (window, events) = glfw.create_window(256, 256, "Hello this is window", glfw::Windowed)
