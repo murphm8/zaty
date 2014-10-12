@@ -2,18 +2,38 @@ use memory::{Memory, pack_u16, high_byte, low_byte, low_nibble, high_nibble};
 use extensions::Incrementor;
 use cpu::{Register, Flags, CarryFlag, HalfCarryFlag, ZeroFlag, SubtractFlag};
 
+fn half_carry(val1: u8, val2: u8) -> bool {
+    return (low_nibble(val1) + low_nibble(val2)) > 0x0F
+}
+
+fn carry(val1: u8, val2: u8) -> bool {
+    return val1 as u16 + val2 as u16 > 0xFF;
+}
+
 /// Add the value of two registers and store it in the first register
 pub fn add(first: &mut Register<u8>, second: &Register<u8>, freg: &mut Register<Flags>) {
     debug!("add: {} {}", first.read(), second.read());
-    let new_value = first.read() + second.read();
-    first.write(new_value);
+    let val1 = first.read();
+    let val2 = second.read();
+    let result = val1 + val2;
 
     let mut flags = Flags::empty();
-    if new_value < first.read() || new_value < second.read() {
-        // Carry
-        flags = flags | CarryFlag
+    
+    if half_carry(val1, val2) {
+        flags = HalfCarryFlag;
     }
+
+    if carry(val1, val2) {
+        flags = flags | CarryFlag;
+    }
+
+    if result == 0 && flags == Flags::empty() {
+        flags = ZeroFlag;
+    }
+
+    first.write(result);
     freg.write(flags);
+
 }
 
 /// Load the value from one register into another
@@ -358,11 +378,11 @@ fn test_increment_register() {
 #[test]
 fn test_add_reg_with_reg() {
     let mut first = Register::new(0x05);
-    let mut second = Register::new(0x09);
+    let mut second = Register::new(0x0B);
     let mut flags = Register::new(SubtractFlag);
 
     add(&mut first, &second, &mut flags);
-    assert!(first.read() == 14, "Expected: {}, Actual: {}", "14", first.read());
+    assert!(first.read() == 0x10, "Expected: {}, Actual: {}", "16", first.read());
     assert!(flags.read() == HalfCarryFlag, "HalfCarry should be set");
 
     let mut a = Register::new(0xFA);
