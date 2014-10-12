@@ -115,10 +115,10 @@ impl<T: Copy + Unsigned>  Register<T> {
 
 bitflags! {
     flags Flags: u8 {
-        static ZeroFlag       = 0b10000000,
-        static SubtractFlag   = 0b01000000,
-        static HalfCarryFlag  = 0b00100000,
-        static CarryFlag      = 0b00010000,
+        const ZeroFlag       = 0b10000000,
+        const SubtractFlag   = 0b01000000,
+        const HalfCarryFlag  = 0b00100000,
+        const CarryFlag      = 0b00010000,
     }
 }
 
