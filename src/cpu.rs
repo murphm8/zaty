@@ -44,6 +44,9 @@ impl<'a> Cpu<'a> {
             0x13 => ops::increment_register_pair(&mut self.reg.d, &mut self.reg.e), // INC DE
             0x14 => ops::increment_register(&mut self.reg.d, &mut self.reg.f), // INC D
             0x15 => ops::decrement_register(&mut self.reg.d, &mut self.reg.f), // DEC D
+            0x16 => ops::ld_immediate(self.mem, &mut self.reg.pc, &mut self.reg.d), // LD D, n
+            0x17 => ops::rotate_left_with_carry(&mut self.reg.a, &mut self.reg.f), // RL A
+            0x18 => ops::jump_by_signed_immediate(self.mem, &mut self.reg.pc), // JR n
             _ => return
         }
     }

@@ -195,6 +195,38 @@ pub fn rotate_right_with_carry(reg: &mut Register<u8>, freg: &mut Register<Flags
     }
 }
 
+/// Add n to current address and jump to it - n = one byte signed immediate value
+pub fn jump_by_signed_immediate(mem: &Memory, pc: &mut Register<u16>) {
+    let current_pc = pc.read();
+    let offset = mem.read_byte(current_pc);
+    let mut new_pc = 0;
+    if (offset & 0x80) == 0 {
+        new_pc = current_pc + offset as u16;
+    } else {
+        new_pc = current_pc - (offset & 0x7F) as u16;
+    }
+    
+    pc.write(new_pc);
+}
+
+#[test]
+fn test_jump_by_signed_immediate() {
+    let mut mem = Memory::new(0x10000);
+    let mut pc = Register::new(0x0101);
+    // 0x8A = -10 as i8
+    mem.write_byte(0x0101, 0x8A);
+
+    jump_by_signed_immediate(&mem, &mut pc);
+
+    assert!(pc.read() == 0xF7, "Should jump backwards with negative number");
+
+    mem.write_byte(0xF7, 0x37);
+
+    jump_by_signed_immediate(&mem, &mut pc);
+
+    assert!(pc.read() == 0x12E);
+}
+
 #[test]
 fn test_rotate_right_with_carry() {
     let mut reg = Register::new(0x99);
