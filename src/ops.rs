@@ -209,6 +209,35 @@ pub fn jump_by_signed_immediate(mem: &Memory, pc: &mut Register<u16>) {
     pc.write(new_pc);
 }
 
+pub fn relative_jmp_by_signed_immediate_if_not_zeroflag(mem: &Memory, pc: &mut Register<u16>, freg: &Register<Flags>) {
+    if !freg.read().contains(ZeroFlag) {
+        jump_by_signed_immediate(mem, pc);
+    }
+}
+
+#[test]
+fn test_relative_jmp_by_signed_immediate_if_not_zeroflag() {
+    let mut mem = Memory::new(0xFFFF);
+    let mut pc = Register::new(0x1234);
+    let mut freg = Register::new(Flags::empty());
+
+    // Forwards
+    mem.write_byte(0x1234, 0x55);
+    relative_jmp_by_signed_immediate_if_not_zeroflag(&mem, &mut pc, &freg);
+    assert!(pc.read() == 0x1289, "Should jump forwards");
+
+    // Backwards
+    mem.write_byte(0x1289, 0x81);
+    relative_jmp_by_signed_immediate_if_not_zeroflag(&mem, &mut pc, &freg);
+    assert!(pc.read() == 0x1288, "Should jump back"); 
+    
+    // No jump because ZeroFlag is set
+    freg.write(ZeroFlag);
+    mem.write_byte(0x1288, 0xFF);
+    relative_jmp_by_signed_immediate_if_not_zeroflag(&mem, &mut pc, &freg);
+    assert!(pc.read() == 0x1288, "Should not jump if ZeroFlag is set");
+}
+
 #[test]
 fn test_jump_by_signed_immediate() {
     let mut mem = Memory::new(0x10000);

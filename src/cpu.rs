@@ -53,6 +53,7 @@ impl<'a> Cpu<'a> {
             0x1C => ops::increment_register(&mut self.reg.e, &mut self.reg.f), // INC E
             0x1E => ops::decrement_register(&mut self.reg.e, &mut self.reg.f), // DEC E
             0x1F => ops::rotate_right_with_carry(&mut self.reg.a, &mut self.reg.f), // RR A
+            0x20 => ops::relative_jmp_by_signed_immediate_if_not_zeroflag(self.mem, &mut self.reg.pc, &self.reg.f), // JR NZ, n
             _ => return
         }
     }
