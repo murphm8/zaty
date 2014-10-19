@@ -47,6 +47,12 @@ impl<'a> Cpu<'a> {
             0x16 => ops::ld_immediate(self.mem, &mut self.reg.pc, &mut self.reg.d), // LD D, n
             0x17 => ops::rotate_left_with_carry(&mut self.reg.a, &mut self.reg.f), // RL A
             0x18 => ops::jump_by_signed_immediate(self.mem, &mut self.reg.pc), // JR n
+            0x19 => ops::add_register_pair_to_register_pair(&mut self.reg.h, &mut self.reg.l, &self.reg.d, &self.reg.e, &mut self.reg.f), // Add HL, DE
+            0x1A => ops::ld_a_from_reg_pair_as_address(self.mem, &mut self.reg.a, &mut self.reg.d, &mut self.reg.e), // LD A, (DE)
+            0x1B => ops::decrement_register_pair(&mut self.reg.d, &mut self.reg.e), // DEC DE
+            0x1C => ops::increment_register(&mut self.reg.e, &mut self.reg.f), // INC E
+            0x1E => ops::decrement_register(&mut self.reg.e, &mut self.reg.f), // DEC E
+            0x1F => ops::rotate_right_with_carry(&mut self.reg.a, &mut self.reg.f), // RR A
             _ => return
         }
     }
