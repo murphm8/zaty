@@ -215,6 +215,32 @@ pub fn relative_jmp_by_signed_immediate_if_not_zeroflag(mem: &Memory, pc: &mut R
     }
 }
 
+pub fn write_value_to_memory_at_address_and_increment_register(mem: &mut Memory, val: u8, high_reg: &mut Register<u8>, low_reg: &mut Register<u8>) {
+    let address = pack_u16(high_reg.read(), low_reg.read());
+    mem.write_byte(address, val);
+    let new_address = address + 1;
+    high_reg.write(high_byte(new_address));
+    low_reg.write(low_byte(new_address));
+}
+
+#[test]
+fn test_write_value_to_memory_at_address_and_increment_register() {
+    let mut mem = Memory::new(0xFFFF);
+    let mut val = 0x8;
+    let mut high_byte = Register::new(0x12);
+    let mut low_byte = Register::new(0x34);
+
+    write_value_to_memory_at_address_and_increment_register(&mut mem, val, &mut high_byte, &mut low_byte);
+    assert!(low_byte.read() == 0x35, "Should increment register");
+    assert!(mem.read_byte(0x1234) == 0x8, "Should correctly write value");
+
+    low_byte.write(0xFF);
+    write_value_to_memory_at_address_and_increment_register(&mut mem, val, &mut high_byte, &mut low_byte);
+    assert!(mem.read_byte(0x12FF) == 0x8);
+    assert!(high_byte.read() == 0x13);
+    assert!(low_byte.read() == 0x00);
+}
+
 #[test]
 fn test_relative_jmp_by_signed_immediate_if_not_zeroflag() {
     let mut mem = Memory::new(0xFFFF);

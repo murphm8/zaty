@@ -54,6 +54,12 @@ impl<'a> Cpu<'a> {
             0x1E => ops::decrement_register(&mut self.reg.e, &mut self.reg.f), // DEC E
             0x1F => ops::rotate_right_with_carry(&mut self.reg.a, &mut self.reg.f), // RR A
             0x20 => ops::relative_jmp_by_signed_immediate_if_not_zeroflag(self.mem, &mut self.reg.pc, &self.reg.f), // JR NZ, n
+            0x21 => ops::ld_next_two_byte_into_reg_pair(self.mem, &mut self.reg.pc, &mut self.reg.h, &mut self.reg.l), // LD HL, nn
+            0x22 => ops::write_value_to_memory_at_address_and_increment_register(self.mem, self.reg.a.read(), &mut self.reg.h, &mut self.reg.l), // LD (HL), A
+            0x23 => ops::increment_register_pair(&mut self.reg.h, &mut self.reg.l), // INC HL
+            0x24 => ops::increment_register(&mut self.reg.h, &mut self.reg.f), // INC H
+            0x25 => ops::decrement_register(&mut self.reg.h, &mut self.reg.f), // DEC H
+            0x26 => ops::ld_immediate(self.mem, &mut self.reg.pc, &mut self.reg.h), // LD H, n
             _ => return
         }
     }
