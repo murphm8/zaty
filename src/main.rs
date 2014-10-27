@@ -2,7 +2,6 @@
 #![feature(struct_inherit)]
 #![feature(phase)]
 #[phase(plugin, link)] extern crate log;
-extern crate num;
 extern crate native;
 extern crate glfw;
 
