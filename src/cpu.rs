@@ -1,4 +1,3 @@
-use num::integer::Integer;
 use memory::Memory;
 use memory::low_nibble;
 use memory::high_nibble;
@@ -38,7 +37,7 @@ impl<'a> Cpu<'a> {
             0x0D => ops::decrement_register(&mut self.reg.c, &mut self.reg.f), // DEC C
             0x0E => ops::ld_immediate(self.mem, &mut self.reg.pc, &mut self.reg.c), // LD C, n
             0x0F => ops::rotate_right_with_carry(&mut self.reg.a, &mut self.reg.f), // RRC A
-            0x10 => return, // STOP
+            0x10 => error!("STOP Op Code not implemented and is being used"), // STOP
             0x11 => ops::ld_next_two_byte_into_reg_pair(self.mem, &mut self.reg.pc, &mut self.reg.d, &mut self.reg.e), // LD DE, nn
             0x12 => ops::write_value_to_memory_at_address(self.mem, self.reg.a.read(), self.reg.d.read(), self.reg.e.read()), // LD (DE), A
             0x13 => ops::increment_register_pair(&mut self.reg.d, &mut self.reg.e), // INC DE
