@@ -223,6 +223,61 @@ pub fn write_value_to_memory_at_address_and_increment_register(mem: &mut Memory,
     low_reg.write(low_byte(new_address));
 }
 
+pub fn relative_jmp_by_signed_immediate_if_zeroflag(mem: &Memory, pc: &mut Register<u16>, freg: &Register<Flags>) {
+    if freg.read().contains(ZeroFlag) {
+        jump_by_signed_immediate(mem, pc);
+    }
+}
+
+pub fn ld_from_address_pointed_to_by_register_pair_and_increment_register_pair(mem: &Memory, reg: &mut Register<u8>, high_byte: &mut Register<u8>, low_byte: &mut Register<u8>) {
+   let address = pack_u16(high_byte.read(), low_byte.read()); 
+
+   let val = mem.read_byte(address);
+
+   reg.write(val);
+   increment_register_pair(high_byte, low_byte);
+}
+
+#[test]
+fn test_ld_from_address_pointed_to_by_register_pair_and_increment_register_pair() {
+    let mut mem = Memory::new(0xFFFF);
+    let mut reg = Register::new(0x12);
+    let mut high_byte = Register::new(0xAB);
+    let mut low_byte = Register::new(0xCD);
+
+    mem.write_byte(0xABCD, 0x54);
+    ld_from_address_pointed_to_by_register_pair_and_increment_register_pair(&mem, &mut reg, &mut high_byte, &mut low_byte);
+
+    assert!(reg.read() == 0x54);
+    assert!(low_byte.read() == 0xCE);
+}
+
+#[test]
+fn test_relative_jmp_by_signed_immediate_if_zeroflag() {
+    let mut mem = Memory::new(0xFFFF);
+    let mut pc = Register::new(0x1234);
+    let mut freg = Register::new(Flags::empty());
+
+    // Forwards
+    freg.write(ZeroFlag);
+    mem.write_byte(0x1234, 0x55);
+    relative_jmp_by_signed_immediate_if_zeroflag(&mem, &mut pc, &freg);
+    assert!(pc.read() == 0x1289, "Should jump forwards");
+
+    // Backwards
+    freg.write(ZeroFlag);
+    mem.write_byte(0x1289, 0x81);
+    relative_jmp_by_signed_immediate_if_zeroflag(&mem, &mut pc, &freg);
+    assert!(pc.read() == 0x1288, "Should jump back"); 
+    
+    // No jump because ZeroFlag is not set
+    freg.write(Flags::empty());
+    mem.write_byte(0x1288, 0xFF);
+    relative_jmp_by_signed_immediate_if_zeroflag(&mem, &mut pc, &freg);
+    assert!(pc.read() == 0x1288, "Should not jump if ZeroFlag is not set");
+
+}
+
 #[test]
 fn test_write_value_to_memory_at_address_and_increment_register() {
     let mut mem = Memory::new(0xFFFF);

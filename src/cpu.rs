@@ -59,6 +59,10 @@ impl<'a> Cpu<'a> {
             0x24 => ops::increment_register(&mut self.reg.h, &mut self.reg.f), // INC H
             0x25 => ops::decrement_register(&mut self.reg.h, &mut self.reg.f), // DEC H
             0x26 => ops::ld_immediate(self.mem, &mut self.reg.pc, &mut self.reg.h), // LD H, n
+            0x27 => error!("DAA instruction not implemented and is being used"),
+            0x28 => ops::relative_jmp_by_signed_immediate_if_zeroflag(self.mem, &mut self.reg.pc, &self.reg.f), // JR Z, n
+            0x29 => return, //ops::add_register_pair_to_register_pair(&mut self.reg.h, &mut self.reg.l, &self.reg.h, &self.reg.l, &mut self.reg.f), // ADD HL, HL 
+            0x2A => ops::ld_from_address_pointed_to_by_register_pair_and_increment_register_pair(self.mem, &mut self.reg.a, &mut self.reg.h, &mut self.reg.l),
             _ => return
         }
     }
