@@ -62,7 +62,7 @@ impl<'a> Cpu<'a> {
             0x1F => ops::rotate_right_with_carry(&mut self.reg.a, &mut self.reg.f), // RR A
             0x20 => ops::relative_jmp_by_signed_immediate_if_not_zeroflag(self.mem, &mut self.reg.pc, &self.reg.f), // JR NZ, n
             0x21 => ops::ld_next_two_byte_into_reg_pair(self.mem, &mut self.reg.pc, &mut self.reg.h, &mut self.reg.l), // LD HL, nn
-            0x22 => ops::write_value_to_memory_at_address_and_increment_register(self.mem, self.reg.a.read(), &mut self.reg.h, &mut self.reg.l), // LD (HL), A
+            0x22 => ops::write_value_to_memory_at_address_and_increment_register(self.mem, self.reg.a.read(), &mut self.reg.h, &mut self.reg.l), // LDI (HL), A
             0x23 => ops::increment_register_pair(&mut self.reg.h, &mut self.reg.l), // INC HL
             0x24 => ops::increment_register(&mut self.reg.h, &mut self.reg.f), // INC H
             0x25 => ops::decrement_register(&mut self.reg.h, &mut self.reg.f), // DEC H
@@ -70,7 +70,11 @@ impl<'a> Cpu<'a> {
             0x27 => error!("DAA instruction not implemented and is being used"),
             0x28 => ops::relative_jmp_by_signed_immediate_if_zeroflag(self.mem, &mut self.reg.pc, &self.reg.f), // JR Z, n
             0x29 => ops::add_register_pair_to_register_pair(&mut self.reg.h, &mut self.reg.l, h, l, &mut self.reg.f), // ADD HL, HL 
-            0x2A => ops::ld_from_address_pointed_to_by_register_pair_and_increment_register_pair(self.mem, &mut self.reg.a, &mut self.reg.h, &mut self.reg.l),
+            0x2A => ops::ld_from_address_pointed_to_by_register_pair_and_increment_register_pair(self.mem, &mut self.reg.a, &mut self.reg.h, &mut self.reg.l), // LDI A, HL
+            0x2B => ops::decrement_register_pair(&mut self.reg.h, &mut self.reg.l), // DEC HL 
+            0x2C => ops::increment_register(&mut self.reg.l, &mut self.reg.f), // INC L
+            0x2E => ops::decrement_register(&mut self.reg.l, &mut self.reg.f), // DEC L
+            0x2F => ops::complement(&mut self.reg.a, &mut self.reg.f), // CPL 
             _ => return
         }
     }

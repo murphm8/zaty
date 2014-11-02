@@ -240,6 +240,34 @@ pub fn ld_from_address_pointed_to_by_register_pair_and_increment_register_pair(m
    increment_register_pair(high_byte, low_byte);
 }
 
+pub fn complement(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
+    let val = reg.read();
+    reg.write(!val);
+
+    let mut flags = freg.read();
+    flags.insert(HalfCarryFlag);
+    flags.insert(SubtractFlag);
+    freg.write(flags);
+}
+
+#[test]
+fn test_complement() {
+    let mut a = Register::new(0x11);
+    let mut freg = Register::new(ZeroFlag | CarryFlag);
+
+    complement(&mut a, &mut freg);
+
+    assert!(a.read() == !0x11);
+    assert!(freg.read().is_all());
+
+    freg.write(Flags::empty());
+    complement(&mut a, &mut freg);
+
+    assert!(a.read() == 0x11);
+    assert!(freg.read().contains(HalfCarryFlag));
+    assert!(freg.read().contains(SubtractFlag));
+}
+
 #[test]
 fn test_ld_from_address_pointed_to_by_register_pair_and_increment_register_pair() {
     let mut mem = Memory::new(0xFFFF);
