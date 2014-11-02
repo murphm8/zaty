@@ -20,6 +20,14 @@ impl<'a> Cpu<'a> {
     pub fn tick(&mut self) {
         let instr = self.fetch_instruction(); 
 
+        let a = self.reg.a.read();
+        let b = self.reg.b.read();
+        let c = self.reg.c.read();
+        let d = self.reg.d.read();
+        let e = self.reg.e.read();
+        let h = self.reg.h.read();
+        let l = self.reg.l.read();
+
         match instr {
             0x00 => ops::nop(), // NOP
             0x01 => ops::ld_next_two_byte_into_reg_pair(self.mem, &mut self.reg.pc, &mut self.reg.b, &mut self.reg.c), // LD BC, nn
@@ -30,7 +38,7 @@ impl<'a> Cpu<'a> {
             0x06 => ops::ld_immediate(self.mem, &mut self.reg.pc, &mut self.reg.b), // LD B, n
             0x07 => ops::rotate_left_with_carry(&mut self.reg.a, &mut self.reg.f), // RLC A
             0x08 => ops::write_sp_to_address_immediate(self.mem, &mut self.reg.pc, &self.reg.sp), // LD (nn), SP
-            0x09 => ops::add_register_pair_to_register_pair(&mut self.reg.h, &mut self.reg.l, &self.reg.b, &self.reg.c, &mut self.reg.f), // ADD HL, BC
+            0x09 => ops::add_register_pair_to_register_pair(&mut self.reg.h, &mut self.reg.l, b, c, &mut self.reg.f), // ADD HL, BC
             0x0A => ops::ld_a_from_reg_pair_as_address(self.mem, &mut self.reg.a, &mut self.reg.b, &mut self.reg.c), // LD A, (BC)
             0x0B => ops::decrement_register_pair(&mut self.reg.b, &mut self.reg.c), // DEC BC
             0x0C => ops::increment_register(&mut self.reg.c, &mut self.reg.f), // INC C
@@ -46,7 +54,7 @@ impl<'a> Cpu<'a> {
             0x16 => ops::ld_immediate(self.mem, &mut self.reg.pc, &mut self.reg.d), // LD D, n
             0x17 => ops::rotate_left_with_carry(&mut self.reg.a, &mut self.reg.f), // RL A
             0x18 => ops::jump_by_signed_immediate(self.mem, &mut self.reg.pc), // JR n
-            0x19 => ops::add_register_pair_to_register_pair(&mut self.reg.h, &mut self.reg.l, &self.reg.d, &self.reg.e, &mut self.reg.f), // Add HL, DE
+            0x19 => ops::add_register_pair_to_register_pair(&mut self.reg.h, &mut self.reg.l, d, e, &mut self.reg.f), // Add HL, DE
             0x1A => ops::ld_a_from_reg_pair_as_address(self.mem, &mut self.reg.a, &mut self.reg.d, &mut self.reg.e), // LD A, (DE)
             0x1B => ops::decrement_register_pair(&mut self.reg.d, &mut self.reg.e), // DEC DE
             0x1C => ops::increment_register(&mut self.reg.e, &mut self.reg.f), // INC E
@@ -61,7 +69,7 @@ impl<'a> Cpu<'a> {
             0x26 => ops::ld_immediate(self.mem, &mut self.reg.pc, &mut self.reg.h), // LD H, n
             0x27 => error!("DAA instruction not implemented and is being used"),
             0x28 => ops::relative_jmp_by_signed_immediate_if_zeroflag(self.mem, &mut self.reg.pc, &self.reg.f), // JR Z, n
-            0x29 => return, //ops::add_register_pair_to_register_pair(&mut self.reg.h, &mut self.reg.l, &self.reg.h, &self.reg.l, &mut self.reg.f), // ADD HL, HL 
+            0x29 => ops::add_register_pair_to_register_pair(&mut self.reg.h, &mut self.reg.l, h, l, &mut self.reg.f), // ADD HL, HL 
             0x2A => ops::ld_from_address_pointed_to_by_register_pair_and_increment_register_pair(self.mem, &mut self.reg.a, &mut self.reg.h, &mut self.reg.l),
             _ => return
         }

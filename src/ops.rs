@@ -146,21 +146,23 @@ pub fn nop() {
     debug!("nop");
 }
 
-pub fn add_register_pair_to_register_pair(rega: &mut Register<u8>, regb: &mut Register<u8>, reg1: &Register<u8>, reg2: &Register<u8>, freg: &mut Register<Flags>) {
+/// Adds two sets of registers as 16 bit numbers with carries counted on bit 11 and 15
+pub fn add_register_pair_to_register_pair(rega: &mut Register<u8>, regb: &mut Register<u8>, reg1: u8, reg2: u8, freg: &mut Register<Flags>) {
     let first = pack_u16(rega.read(), regb.read());
-    let second = pack_u16(reg1.read(), reg2.read());
+    let second = pack_u16(reg1, reg2);
 
     let sum = first + second;
 
     // Reset subtract flag, leave ZeroFlag alone
     let mut flags = freg.read();
+    flags.remove(SubtractFlag);
 
-    if high_nibble(rega.read()) + high_nibble(reg1.read()) > 15 {
-        flags = flags | CarryFlag
+    if high_nibble(rega.read()) + high_nibble(reg1) > 15 {
+        flags.insert(CarryFlag)
     }
 
-    if low_nibble(rega.read()) + low_nibble(reg1.read()) > 15 {
-        flags = flags | HalfCarryFlag;
+    if low_nibble(rega.read()) + low_nibble(reg1) > 15 {
+        flags.insert(HalfCarryFlag);
     }
 
     rega.write(high_byte(sum));
@@ -388,10 +390,10 @@ fn test_add_register_pair_to_register_pair() {
     let mut reg1 = Register::new(0x11);
     let mut reg2 = Register::new(0x11);
 
-    let mut freg = Register::new(ZeroFlag);
+    let mut freg = Register::new(ZeroFlag | SubtractFlag);
 
     // Basic add make sure ZeroFlag isn't affected
-    add_register_pair_to_register_pair(&mut rega, &mut regb, &reg1, &reg2, &mut freg);
+    add_register_pair_to_register_pair(&mut rega, &mut regb, reg1.read(), reg2.read(), &mut freg);
     
     assert!(pack_u16(rega.read(), regb.read()) == 0x2222);
     assert!(freg.read() == ZeroFlag);
@@ -401,8 +403,8 @@ fn test_add_register_pair_to_register_pair() {
     reg1.write(0x12);
     reg2.write(0x12);
     
-    // Carry from bit 11
-    add_register_pair_to_register_pair(&mut rega, &mut regb, &reg1, &reg2, &mut freg);
+    // Carry from bit 15
+    add_register_pair_to_register_pair(&mut rega, &mut regb, reg1.read(), reg2.read(), &mut freg);
 
     assert!(pack_u16(rega.read(), regb.read()) == 0x03BD);
     assert!(freg.read() == ZeroFlag | CarryFlag);
@@ -410,16 +412,15 @@ fn test_add_register_pair_to_register_pair() {
     rega.write(0x1E);
     regb.write(0xAB);
     reg1.write(0x12);
-    reg2.write(0x12);
-    freg.write(Flags::empty());
+    reg2.write(0x16);
+    freg.write(ZeroFlag);
 
     // Carry from bit 11
-    add_register_pair_to_register_pair(&mut rega, &mut regb, &reg1, &reg2, &mut freg);
+    add_register_pair_to_register_pair(&mut rega, &mut regb, reg1.read(), reg2.read(), &mut freg);
 
-    assert!(pack_u16(rega.read(), regb.read()) == 0x30BD);
-    assert!(freg.read() == HalfCarryFlag);
-
-
+    assert!(pack_u16(rega.read(), regb.read()) == 0x30C1);
+    println!("{}", freg.read().bits());
+    assert!(freg.read() == ZeroFlag | HalfCarryFlag);
 }
 
 #[test]
