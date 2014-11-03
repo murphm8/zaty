@@ -80,15 +80,16 @@ pub fn increment_register_pair(msb: &mut Register<u8>,lsb: &mut Register<u8>) {
 /// Set HalfCarryFlag if there is a carry from bit 3
 pub fn increment_register(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
     let val = reg.read();
-    let mut flags = Flags::empty();
+    let mut flags = freg.read();
+    flags.remove(SubtractFlag);
 
-    if val == 0x0F {
-        flags = HalfCarryFlag;
+    if low_nibble(val) == 0xF {
+        flags.insert(HalfCarryFlag);
     }
     reg.increment();
 
     if reg.read() == 0 {
-        flags = flags | ZeroFlag;
+        flags.insert(ZeroFlag);
     }
     freg.write(flags);
 }
@@ -271,6 +272,40 @@ pub fn ld_next_two_bytes_into_reg(mem: &Memory, pc: &mut Register<u16>, reg: &mu
     pc.increment();
     debug!("ld_next_two_bytes_into_reg: {}", val);
     reg.write(val);
+}
+
+pub fn increment_value_at_address(mem: &mut Memory, hb: u8, lb: u8, freg: &mut Register<Flags>) {
+    let addr = pack_u16(hb, lb);
+    let val = mem.read_byte(addr);
+    let mut reg = Register::new(val);
+    increment_register(&mut reg, freg);
+    mem.write_byte(addr, reg.read());
+}
+
+#[test]
+fn test_increment_value_at_address() {
+    let mut mem = Memory::new(0xFFFF);
+    let mut freg = Register::new(CarryFlag);
+
+    increment_value_at_address(&mut mem, 0x10, 0x10, &mut freg);
+
+    assert!(mem.read_byte(0x1010) == 1);
+    assert!(freg.read() == CarryFlag);
+
+    mem.write_byte(0x01AB, 0x1F);
+
+    increment_value_at_address(&mut mem, 0x01, 0xAB, &mut freg);
+    
+    assert!(mem.read_byte(0x01AB) == 0x20);
+    assert!(freg.read().contains(CarryFlag));
+    assert!(freg.read().contains(HalfCarryFlag));
+
+    freg.write(SubtractFlag);
+    mem.write_byte(0xABCD, 0xED);
+    increment_value_at_address(&mut mem, 0xAB, 0xCD, &mut freg);
+
+    assert!(mem.read_byte(0xABCD) == 0xEE);
+    assert!(freg.read() == Flags::empty());
 }
 
 #[test]
@@ -623,7 +658,7 @@ fn test_increment_register() {
     increment_register(&mut regc, &mut freg);
 
     assert!(regc.read() == 0x00);
-    assert!(freg.read() == ZeroFlag);
+    assert!(freg.read() == HalfCarryFlag | ZeroFlag);
 }
 
 #[test]
