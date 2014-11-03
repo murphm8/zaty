@@ -225,9 +225,23 @@ pub fn write_value_to_memory_at_address_and_increment_register(mem: &mut Memory,
     low_reg.write(low_byte(new_address));
 }
 
+pub fn write_value_to_memory_at_address_and_decrement_register(mem: &mut Memory, val: u8, high_reg: &mut Register<u8>, low_reg: &mut Register<u8>) {
+    let address = pack_u16(high_reg.read(), low_reg.read());
+    mem.write_byte(address, val);
+    let new_address = address - 1;
+    high_reg.write(high_byte(new_address));
+    low_reg.write(low_byte(new_address));
+}
+
 pub fn relative_jmp_by_signed_immediate_if_zeroflag(mem: &Memory, pc: &mut Register<u16>, freg: &Register<Flags>) {
     if freg.read().contains(ZeroFlag) {
         jump_by_signed_immediate(mem, pc);
+    }
+}
+
+pub fn relative_jmp_by_signed_immediate_if_not_carryflag(mem: &Memory, pc: &mut Register<u16>, freg: &Register<Flags>) {
+    if !freg.read().contains(CarryFlag) {
+        jump_by_signed_immediate(mem, pc)
     }
 }
 
@@ -248,6 +262,72 @@ pub fn complement(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
     flags.insert(HalfCarryFlag);
     flags.insert(SubtractFlag);
     freg.write(flags);
+}
+
+/// Loads the next two bytes into the passed in register (sp)
+pub fn ld_next_two_bytes_into_reg(mem: &Memory, pc: &mut Register<u16>, reg: &mut Register<u16>) {
+    let val = mem.read_word(pc.read());
+    pc.increment();
+    pc.increment();
+    debug!("ld_next_two_bytes_into_reg: {}", val);
+    reg.write(val);
+}
+
+#[test]
+fn test_write_value_to_memory_at_address_and_decrement_register() {
+    let mut mem = Memory::new(0xFFFF);
+    let mut val = 0x8;
+    let mut high_byte = Register::new(0x12);
+    let mut low_byte = Register::new(0x34);
+
+    write_value_to_memory_at_address_and_decrement_register(&mut mem, val, &mut high_byte, &mut low_byte);
+    assert!(low_byte.read() == 0x33, "Should increment register");
+    assert!(mem.read_byte(0x1234) == 0x8, "Should correctly write value");
+
+    high_byte.write(0x11);
+    low_byte.write(0x00);
+    write_value_to_memory_at_address_and_decrement_register(&mut mem, val, &mut high_byte, &mut low_byte);
+    assert!(mem.read_byte(0x1100) == 0x8);
+    assert!(high_byte.read() == 0x10);
+    assert!(low_byte.read() == 0xFF);
+}
+
+#[test]
+fn test_ld_next_two_bytes_into_reg() {
+    let mut mem = Memory::new(65536);
+    let mut pc = Register::new(11);
+    let mut reg = Register::new(0);
+    
+    mem.write_word(11, 0xDEAB);
+
+    ld_next_two_bytes_into_reg(&mem, &mut pc, &mut reg);
+    assert!(pc.read() == 13);
+    assert!(reg.read() == 0xDEAB);
+}
+
+#[test]
+fn test_relative_jmp_by_signed_immediate_if_not_carryflag() {
+    let mut mem = Memory::new(0xFFFF);
+    let mut pc = Register::new(0x1234);
+    let mut freg = Register::new(Flags::empty());
+
+    // Forwards
+    freg.write(HalfCarryFlag);
+    mem.write_byte(0x1234, 0x55);
+    relative_jmp_by_signed_immediate_if_not_carryflag(&mem, &mut pc, &freg);
+    assert!(pc.read() == 0x1289, "Should jump forwards");
+
+    // Backwards
+    freg.write(ZeroFlag);
+    mem.write_byte(0x1289, 0x81);
+    relative_jmp_by_signed_immediate_if_not_carryflag(&mem, &mut pc, &freg);
+    assert!(pc.read() == 0x1288, "Should jump back"); 
+    
+    // No jump because CarryFlag is set
+    freg.write(CarryFlag);
+    mem.write_byte(0x1288, 0xFF);
+    relative_jmp_by_signed_immediate_if_not_carryflag(&mem, &mut pc, &freg);
+    assert!(pc.read() == 0x1288, "Should not jump if ZeroFlag is not set");
 }
 
 #[test]

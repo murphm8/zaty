@@ -75,6 +75,10 @@ impl<'a> Cpu<'a> {
             0x2C => ops::increment_register(&mut self.reg.l, &mut self.reg.f), // INC L
             0x2E => ops::decrement_register(&mut self.reg.l, &mut self.reg.f), // DEC L
             0x2F => ops::complement(&mut self.reg.a, &mut self.reg.f), // CPL 
+            0x30 => ops::relative_jmp_by_signed_immediate_if_not_carryflag(self.mem, &mut self.reg.pc, &self.reg.f), // JR NC, n
+            0x31 => ops::ld_next_two_bytes_into_reg(self.mem, &mut self.reg.pc, &mut self.reg.sp), // LD SP, nn
+            0x32 => ops::write_value_to_memory_at_address_and_decrement_register(self.mem, self.reg.a.read(), &mut self.reg.h, &mut self.reg.l), // LDI (HL), A
+            0x33 => self.reg.sp.increment(), // INC SP 
             _ => return
         }
     }
