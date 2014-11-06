@@ -297,6 +297,25 @@ pub fn decrement_value_at_address(mem: &mut Memory, hb: u8, lb: u8, freg: &mut R
     mem.write_byte(addr, reg.read());
 }
 
+pub fn ld_immediate_into_address(mem: &mut Memory, pc: &mut Register<u16>, hb: u8, lb: u8) {
+    let addr = pack_u16(hb, lb);
+    let val = mem.read_byte(pc.read());
+    pc.increment();
+    mem.write_byte(addr, val);
+}
+
+#[test]
+fn test_ld_immediate_into_address() {
+    let mut mem = Memory::new(0xFFFF);
+    let mut pc = Register::new(0xAD12);
+    mem.write_byte(0xAD12, 0xBB);
+
+    ld_immediate_into_address(&mut mem, &mut pc, 0x12, 0x34);
+
+    assert!(mem.read_byte(0x1234) == 0xBB);
+    assert!(pc.read() == 0xAD13);
+}
+
 #[test]
 fn test_decrement_value_at_address() {
     let mut mem = Memory::new(0xFFFF);

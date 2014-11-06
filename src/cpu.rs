@@ -81,6 +81,7 @@ impl<'a> Cpu<'a> {
             0x33 => self.reg.sp.increment(), // INC SP 
             0x34 => ops::increment_value_at_address(self.mem, self.reg.h.read(), self.reg.l.read(), &mut self.reg.f),
             0x35 => ops::decrement_value_at_address(self.mem, self.reg.h.read(), self.reg.l.read(), &mut self.reg.f),
+            0x36 => ops::ld_immediate_into_address(self.mem, &mut self.reg.pc, self.reg.h.read(), self.reg.l.read()),
             _ => return
         }
     }
@@ -88,7 +89,7 @@ impl<'a> Cpu<'a> {
     /// Fetches the instruction pointed to by the program counter
     /// and increments the pc by 1
     fn fetch_instruction(&mut self) -> u8 {
-        let instr = self.mem.read_byte(self.reg.pc.val);
+        let instr = self.mem.read_byte(self.reg.pc.read());
         self.reg.pc.increment();
         return instr;     
     }
