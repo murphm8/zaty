@@ -82,6 +82,8 @@ pub fn increment_register(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
     let val = reg.read();
     let mut flags = freg.read();
     flags.remove(SubtractFlag);
+    flags.remove(HalfCarryFlag);
+    flags.remove(ZeroFlag);
 
     if low_nibble(val) == 0xF {
         flags.insert(HalfCarryFlag);
@@ -121,6 +123,7 @@ pub fn decrement_register(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
 /// Set CarryFlag if bit 7 is 1
 pub fn rotate_left_with_carry(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
     let val = reg.read();
+    freg.write(Flags::empty());
 
     if val == 0 {
         freg.write(ZeroFlag);
@@ -159,6 +162,8 @@ pub fn add_register_pair_to_register_pair(rega: &mut Register<u8>, regb: &mut Re
     // Reset subtract flag, leave ZeroFlag alone
     let mut flags = freg.read();
     flags.remove(SubtractFlag);
+    flags.remove(CarryFlag);
+    flags.remove(HalfCarryFlag);
 
     if high_nibble(rega.read()) + high_nibble(reg1) > 15 {
         flags.insert(CarryFlag)
@@ -570,7 +575,7 @@ fn test_add_register_pair_to_register_pair() {
     let mut reg1 = Register::new(0x11);
     let mut reg2 = Register::new(0x11);
 
-    let mut freg = Register::new(ZeroFlag | SubtractFlag);
+    let mut freg = Register::new(ZeroFlag | SubtractFlag | HalfCarryFlag | CarryFlag);
 
     // Basic add make sure ZeroFlag isn't affected
     add_register_pair_to_register_pair(&mut rega, &mut regb, reg1.read(), reg2.read(), &mut freg);
@@ -620,7 +625,7 @@ fn test_write_stack_pointer_to_address_immediate() {
 #[test]
 fn test_rotate_left_with_carry() {
     let mut reg = Register::new(0x0F);
-    let mut freg = Register::new(Flags::empty());
+    let mut freg = Register::new(SubtractFlag | HalfCarryFlag);
 
     rotate_left_with_carry(&mut reg, &mut freg);
     
@@ -675,7 +680,7 @@ fn test_decrement_register() {
 #[test]
 fn test_increment_register() {
     let mut reg = Register::new(1);
-    let mut freg = Register::new(Flags::empty());
+    let mut freg = Register::new(ZeroFlag | HalfCarryFlag);
 
     increment_register(&mut reg, &mut freg);
 
