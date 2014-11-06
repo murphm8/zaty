@@ -100,7 +100,9 @@ pub fn increment_register(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
 /// Set HalfCarryFlag if there is no borrow from bit 4
 pub fn decrement_register(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
     let val = reg.read();
-    let mut flags = SubtractFlag;
+    let mut flags = freg.read() | SubtractFlag;
+    flags.remove(ZeroFlag);
+    flags.remove(HalfCarryFlag);
 
     if (val & 0x0F) > 0 {
         flags = flags | HalfCarryFlag;
@@ -280,6 +282,41 @@ pub fn increment_value_at_address(mem: &mut Memory, hb: u8, lb: u8, freg: &mut R
     let mut reg = Register::new(val);
     increment_register(&mut reg, freg);
     mem.write_byte(addr, reg.read());
+}
+
+pub fn decrement_value_at_address(mem: &mut Memory, hb: u8, lb: u8, freg: &mut Register<Flags>) {
+    let addr = pack_u16(hb, lb);
+    let val = mem.read_byte(addr);
+    let mut reg = Register::new(val);
+    decrement_register(&mut reg, freg);
+    mem.write_byte(addr, reg.read());
+}
+
+#[test]
+fn test_decrement_value_at_address() {
+    let mut mem = Memory::new(0xFFFF);
+    let mut freg = Register::new(CarryFlag);
+    mem.write_byte(0x1010, 1);
+
+    decrement_value_at_address(&mut mem, 0x10, 0x10, &mut freg);
+
+    assert!(mem.read_byte(0x1010) == 0);
+    assert!(freg.read().is_all());
+
+    mem.write_byte(0x01AB, 0x20);
+
+    decrement_value_at_address(&mut mem, 0x01, 0xAB, &mut freg);
+    
+    assert!(mem.read_byte(0x01AB) == 0x1F);
+    assert!(freg.read() == CarryFlag | SubtractFlag);
+
+    freg.write(ZeroFlag);
+    mem.write_byte(0xABCD, 0xED);
+    decrement_value_at_address(&mut mem, 0xAB, 0xCD, &mut freg);
+
+    assert!(mem.read_byte(0xABCD) == 0xEC);
+    assert!(freg.read() == SubtractFlag | HalfCarryFlag);
+
 }
 
 #[test]
