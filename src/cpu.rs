@@ -60,7 +60,7 @@ impl<'a> Cpu<'a> {
             0x1C => ops::increment_register(&mut self.reg.e, &mut self.reg.f), // INC E
             0x1E => ops::decrement_register(&mut self.reg.e, &mut self.reg.f), // DEC E
             0x1F => ops::rotate_right_with_carry(&mut self.reg.a, &mut self.reg.f), // RR A
-            0x20 => ops::relative_jmp_by_signed_immediate_if_not_zeroflag(self.mem, &mut self.reg.pc, &self.reg.f), // JR NZ, n
+            0x20 => ops::relative_jmp_by_signed_immediate_if_not_flag(self.mem, &mut self.reg.pc, &self.reg.f, ZeroFlag), // JR NZ, n
             0x21 => ops::ld_next_two_byte_into_reg_pair(self.mem, &mut self.reg.pc, &mut self.reg.h, &mut self.reg.l), // LD HL, nn
             0x22 => ops::write_value_to_memory_at_address_and_increment_register(self.mem, self.reg.a.read(), &mut self.reg.h, &mut self.reg.l), // LDI (HL), A
             0x23 => ops::increment_register_pair(&mut self.reg.h, &mut self.reg.l), // INC HL
@@ -68,20 +68,22 @@ impl<'a> Cpu<'a> {
             0x25 => ops::decrement_register(&mut self.reg.h, &mut self.reg.f), // DEC H
             0x26 => ops::ld_immediate(self.mem, &mut self.reg.pc, &mut self.reg.h), // LD H, n
             0x27 => error!("DAA instruction not implemented and is being used"),
-            0x28 => ops::relative_jmp_by_signed_immediate_if_zeroflag(self.mem, &mut self.reg.pc, &self.reg.f), // JR Z, n
+            0x28 => ops::relative_jmp_by_signed_immediate_if_flag(self.mem, &mut self.reg.pc, &self.reg.f, ZeroFlag), // JR Z, n
             0x29 => ops::add_register_pair_to_register_pair(&mut self.reg.h, &mut self.reg.l, h, l, &mut self.reg.f), // ADD HL, HL 
             0x2A => ops::ld_from_address_pointed_to_by_register_pair_and_increment_register_pair(self.mem, &mut self.reg.a, &mut self.reg.h, &mut self.reg.l), // LDI A, HL
             0x2B => ops::decrement_register_pair(&mut self.reg.h, &mut self.reg.l), // DEC HL 
             0x2C => ops::increment_register(&mut self.reg.l, &mut self.reg.f), // INC L
             0x2E => ops::decrement_register(&mut self.reg.l, &mut self.reg.f), // DEC L
             0x2F => ops::complement(&mut self.reg.a, &mut self.reg.f), // CPL 
-            0x30 => ops::relative_jmp_by_signed_immediate_if_not_carryflag(self.mem, &mut self.reg.pc, &self.reg.f), // JR NC, n
+            0x30 => ops::relative_jmp_by_signed_immediate_if_not_flag(self.mem, &mut self.reg.pc, &self.reg.f, CarryFlag), // JR NC, n
             0x31 => ops::ld_next_two_bytes_into_reg(self.mem, &mut self.reg.pc, &mut self.reg.sp), // LD SP, nn
             0x32 => ops::write_value_to_memory_at_address_and_decrement_register(self.mem, self.reg.a.read(), &mut self.reg.h, &mut self.reg.l), // LDI (HL), A
             0x33 => self.reg.sp.increment(), // INC SP 
             0x34 => ops::increment_value_at_address(self.mem, self.reg.h.read(), self.reg.l.read(), &mut self.reg.f),
             0x35 => ops::decrement_value_at_address(self.mem, self.reg.h.read(), self.reg.l.read(), &mut self.reg.f),
             0x36 => ops::ld_immediate_into_address(self.mem, &mut self.reg.pc, self.reg.h.read(), self.reg.l.read()),
+            0x37 => ops::set_flag(&mut self.reg.f, CarryFlag),
+            0x38 => ops::relative_jmp_by_signed_immediate_if_flag(self.mem, &mut self.reg.pc, &mut self.reg.f, CarryFlag),
             _ => return
         }
     }
