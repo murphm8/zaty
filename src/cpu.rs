@@ -72,7 +72,8 @@ impl<'a> Cpu<'a> {
             0x2A => ops::ld_from_address_pointed_to_by_register_pair_and_increment_register_pair(self.mem, &mut self.reg.a, &mut self.reg.h, &mut self.reg.l), // LDI A, HL
             0x2B => ops::decrement_register_pair(&mut self.reg.h, &mut self.reg.l), // DEC HL 
             0x2C => ops::increment_register(&mut self.reg.l, &mut self.reg.f), // INC L
-            0x2E => ops::decrement_register(&mut self.reg.l, &mut self.reg.f), // DEC L
+            0x2D => ops::decrement_register(&mut self.reg.l, &mut self.reg.f), // DEC L
+            0x2E => ops::ld_immediate(self.mem, &mut self.reg.pc, &mut self.reg.l), // LD L, d8
             0x2F => ops::complement(&mut self.reg.a, &mut self.reg.f), // CPL 
             0x30 => ops::relative_jmp_by_signed_immediate_if_not_flag(self.mem, &mut self.reg.pc, &self.reg.f, CarryFlag), // JR NC, n
             0x31 => ops::ld_next_two_bytes_into_reg(self.mem, &mut self.reg.pc, &mut self.reg.sp), // LD SP, nn
@@ -85,6 +86,11 @@ impl<'a> Cpu<'a> {
             0x38 => ops::relative_jmp_by_signed_immediate_if_flag(self.mem, &mut self.reg.pc, &mut self.reg.f, CarryFlag),
             0x39 => ops::add_register_pair_to_register_pair(&mut self.reg.h, &mut self.reg.l, high_byte(sp), low_byte(sp), &mut self.reg.f), // ADD HL, SP 
             0x3A => ops::ld_from_address_pointed_to_by_register_pair_and_decrement_register_pair(self.mem, &mut self.reg.a, &mut self.reg.h, &mut self.reg.l), // LDD A, HL
+            0x3B => self.reg.sp.decrement(), // INC SP
+            0x3C => ops::increment_register(&mut self.reg.a, &mut self.reg.f), // INC A
+            0x3D => ops::decrement_register(&mut self.reg.a, &mut self.reg.f), // DEC A
+            0x3E => ops::ld_immediate(self.mem, &mut self.reg.pc, &mut self.reg.a), // LD A, d8
+            0x3F => ops::reset_flag(&mut self.reg.f, CarryFlag), // CCF
             _ => return
         }
     }

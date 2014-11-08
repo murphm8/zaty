@@ -317,6 +317,22 @@ pub fn ld_from_address_pointed_to_by_register_pair_and_decrement_register_pair(m
    decrement_register_pair(high_byte, low_byte);
 }
 
+pub fn reset_flag(freg: &mut Register<Flags>, flag: Flags) {
+    let mut f = freg.read();
+    f.remove(flag);
+    freg.write(f);
+}
+
+#[test]
+fn test_reset_flag() {
+    let mut freg = Register::new(CarryFlag | ZeroFlag);
+
+    reset_flag(&mut freg, CarryFlag);
+
+    assert!(!freg.read().contains(CarryFlag));
+    assert!(freg.read().contains(ZeroFlag));
+}
+
 #[test]
 fn test_ld_from_address_pointed_to_by_register_pair_and_decrement_register_pair() {
     let mut mem = Memory::new(0xFFFF);
