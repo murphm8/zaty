@@ -308,6 +308,29 @@ pub fn set_flag(freg: &mut Register<Flags>, flag: Flags) {
     freg.write(flags);
 }
 
+pub fn ld_from_address_pointed_to_by_register_pair_and_decrement_register_pair(mem: &Memory, reg: &mut Register<u8>, high_byte: &mut Register<u8>, low_byte: &mut Register<u8>) {
+   let address = pack_u16(high_byte.read(), low_byte.read()); 
+
+   let val = mem.read_byte(address);
+
+   reg.write(val);
+   decrement_register_pair(high_byte, low_byte);
+}
+
+#[test]
+fn test_ld_from_address_pointed_to_by_register_pair_and_decrement_register_pair() {
+    let mut mem = Memory::new(0xFFFF);
+    let mut reg = Register::new(0x12);
+    let mut high_byte = Register::new(0xAB);
+    let mut low_byte = Register::new(0xCD);
+
+    mem.write_byte(0xABCD, 0x54);
+    ld_from_address_pointed_to_by_register_pair_and_decrement_register_pair(&mem, &mut reg, &mut high_byte, &mut low_byte);
+
+    assert!(reg.read() == 0x54);
+    assert!(low_byte.read() == 0xCC);
+}
+
 #[test]
 fn test_set_flag() {
     let mut freg = Register::new(Flags::empty());

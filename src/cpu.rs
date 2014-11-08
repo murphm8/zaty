@@ -1,6 +1,4 @@
-use memory::Memory;
-use memory::low_nibble;
-use memory::high_nibble;
+use memory::{Memory, low_nibble, high_nibble, low_byte, high_byte};
 use extensions::Incrementor;
 use ops::{mod};
 use std::num::One;
@@ -27,6 +25,7 @@ impl<'a> Cpu<'a> {
         let e = self.reg.e.read();
         let h = self.reg.h.read();
         let l = self.reg.l.read();
+        let sp = self.reg.sp.read();
 
         match instr {
             0x00 => ops::nop(), // NOP
@@ -84,6 +83,8 @@ impl<'a> Cpu<'a> {
             0x36 => ops::ld_immediate_into_address(self.mem, &mut self.reg.pc, self.reg.h.read(), self.reg.l.read()),
             0x37 => ops::set_flag(&mut self.reg.f, CarryFlag),
             0x38 => ops::relative_jmp_by_signed_immediate_if_flag(self.mem, &mut self.reg.pc, &mut self.reg.f, CarryFlag),
+            0x39 => ops::add_register_pair_to_register_pair(&mut self.reg.h, &mut self.reg.l, high_byte(sp), low_byte(sp), &mut self.reg.f), // ADD HL, SP 
+            0x3A => ops::ld_from_address_pointed_to_by_register_pair_and_decrement_register_pair(self.mem, &mut self.reg.a, &mut self.reg.h, &mut self.reg.l), // LDD A, HL
             _ => return
         }
     }
@@ -96,7 +97,6 @@ impl<'a> Cpu<'a> {
         return instr;     
     }
 }
-
 
 struct Registers {
     a: Register<u8>, b: Register<u8>, c: Register<u8>, 
