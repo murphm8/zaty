@@ -97,6 +97,16 @@ impl<'a> Cpu<'a> {
             0x43 => ops::copy_value_into_register(&mut self.reg.b, e), // LD B, E
             0x44 => ops::copy_value_into_register(&mut self.reg.b, h), // LD B, H
             0x45 => ops::copy_value_into_register(&mut self.reg.b, l), // LD B, L
+            0x46 => ops::ld_from_reg_pair_as_address(self.mem, &mut self.reg.b, self.reg.h, self.reg.l), // LD B, (HL)
+            0x47 => ops::copy_value_into_register(&mut self.reg.b, a), // LD B, A
+            0x48 => ops::copy_value_into_register(&mut self.reg.c, b), // LD C, B
+            0x49 => ops::copy_value_into_register(&mut self.reg.c, c), // LD C, C
+            0x4A => ops::copy_value_into_register(&mut self.reg.c, d), // LD C, D
+            0x4B => ops::copy_value_into_register(&mut self.reg.c, e), // LD C, E
+            0x4C => ops::copy_value_into_register(&mut self.reg.c, h), // LD C, H
+            0x4D => ops::copy_value_into_register(&mut self.reg.c, l), // LD C, L
+            0x4E => ops::ld_from_reg_pair_as_address(self.mem, &mut self.reg.b, self.reg.h, self.reg.l), // LD C, (HL) 
+            0x4F => ops::copy_value_into_register(&mut self.reg.c, a), // LD C, A 
             _ => return
         }
     }
