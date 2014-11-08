@@ -107,6 +107,22 @@ impl<'a> Cpu<'a> {
             0x4D => ops::copy_value_into_register(&mut self.reg.c, l), // LD C, L
             0x4E => ops::ld_from_reg_pair_as_address(self.mem, &mut self.reg.b, self.reg.h, self.reg.l), // LD C, (HL) 
             0x4F => ops::copy_value_into_register(&mut self.reg.c, a), // LD C, A 
+            0x50 => ops::copy_value_into_register(&mut self.reg.d, b), // LD D, B
+            0x51 => ops::copy_value_into_register(&mut self.reg.d, c), // LD D, C
+            0x52 => ops::copy_value_into_register(&mut self.reg.d, d), // LD D, D
+            0x53 => ops::copy_value_into_register(&mut self.reg.d, e), // LD D, E
+            0x55 => ops::copy_value_into_register(&mut self.reg.d, h), // LD D, H
+            0x55 => ops::copy_value_into_register(&mut self.reg.d, l), // LD D, L
+            0x56 => ops::ld_from_reg_pair_as_address(self.mem, &mut self.reg.d, self.reg.h, self.reg.l), // LD D, (HL)
+            0x57 => ops::copy_value_into_register(&mut self.reg.d, a), // LD D, A
+            0x58 => ops::copy_value_into_register(&mut self.reg.c, b), // LD E, B
+            0x59 => ops::copy_value_into_register(&mut self.reg.c, c), // LD E, C
+            0x5A => ops::copy_value_into_register(&mut self.reg.c, d), // LD E, D
+            0x5B => ops::copy_value_into_register(&mut self.reg.c, e), // LD E, E
+            0x5C => ops::copy_value_into_register(&mut self.reg.c, h), // LD E, H
+            0x5D => ops::copy_value_into_register(&mut self.reg.c, l), // LD E, L
+            0x5E => ops::ld_from_reg_pair_as_address(self.mem, &mut self.reg.b, self.reg.h, self.reg.l), // LD E, (HL) 
+            0x5F => ops::copy_value_into_register(&mut self.reg.c, a), // LD E, A          
             _ => return
         }
     }
