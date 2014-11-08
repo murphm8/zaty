@@ -11,10 +11,10 @@ fn carry(val1: u8, val2: u8) -> bool {
 }
 
 /// Add the value of two registers and store it in the first register
-pub fn add(first: &mut Register<u8>, second: &Register<u8>, freg: &mut Register<Flags>) {
-    debug!("add: {} {}", first.read(), second.read());
+pub fn add(first: &mut Register<u8>, second: u8, freg: &mut Register<Flags>) {
+    debug!("add: {} {}", first.read(), second);
     let val1 = first.read();
-    let val2 = second.read();
+    let val2 = second;
     let result = val1 + val2;
 
     let mut flags = Flags::empty();
@@ -325,6 +325,38 @@ pub fn reset_flag(freg: &mut Register<Flags>, flag: Flags) {
 
 pub fn copy_value_into_register(reg: &mut Register<u8>, val: u8) {
     reg.write(val);
+}
+
+pub fn add_value_at_address(mem: &Memory, reg: &mut Register<u8>, hb: u8, lb: u8, freg: &mut Register<Flags>) {
+   let val = mem.read_byte(pack_u16(hb, lb));
+   add(reg, val, freg);
+}
+
+#[test]
+fn test_add_value_at_address() {
+    let mut first = Register::new(0x05);
+    let mut mem = Memory::new(0xFFFF);
+    let mut flags = Register::new(SubtractFlag | CarryFlag);
+
+    mem.write_byte(0x8476, 0x0B);
+    add_value_at_address(&mut mem, &mut first, 0x84, 0x76, &mut flags);
+    assert!(first.read() == 0x10, "Expected: {}, Actual: {}", "16", first.read());
+    assert!(flags.read() == HalfCarryFlag, "HalfCarry should be set");
+
+    let mut a = Register::new(0xFA);
+    mem.write_byte(0xADCD, 0x07);
+    
+    add_value_at_address(&mut mem, &mut a, 0xAD, 0xCD, &mut flags);
+
+    assert!(a.read() == 0x01);
+    assert!(flags.read() == CarryFlag | HalfCarryFlag, "HalfCarry and CarryFlag should be set");
+
+    a.write(0);
+
+    add_value_at_address(&mut mem, &mut a, 0x11, 0x11, &mut flags);
+
+    assert!(a.read() == 0x0);
+    assert!(flags.read() == ZeroFlag);
 }
 
 #[test]
@@ -767,16 +799,16 @@ fn test_increment_register() {
 fn test_add_reg_with_reg() {
     let mut first = Register::new(0x05);
     let mut second = Register::new(0x0B);
-    let mut flags = Register::new(SubtractFlag);
+    let mut flags = Register::new(SubtractFlag | CarryFlag);
 
-    add(&mut first, &second, &mut flags);
+    add(&mut first, second.read(), &mut flags);
     assert!(first.read() == 0x10, "Expected: {}, Actual: {}", "16", first.read());
     assert!(flags.read() == HalfCarryFlag, "HalfCarry should be set");
 
     let mut a = Register::new(0xFA);
     let mut b = Register::new(0x07);
     
-    add(&mut a, &b, &mut flags);
+    add(&mut a, b.read(), &mut flags);
 
     assert!(a.read() == 0x01);
     assert!(flags.read() == CarryFlag | HalfCarryFlag, "HalfCarry and CarryFlag should be set");
@@ -784,7 +816,7 @@ fn test_add_reg_with_reg() {
     a.write(0);
     b.write(0);
 
-    add(&mut a, &b, &mut flags);
+    add(&mut a, b.read(), &mut flags);
 
     assert!(a.read() == 0x0);
     assert!(flags.read() == ZeroFlag);

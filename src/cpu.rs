@@ -155,6 +155,15 @@ impl<'a> Cpu<'a> {
             0x7D => ops::copy_value_into_register(&mut self.reg.a, l), // LD A, L
             0x7E => ops::ld_from_reg_pair_as_address(self.mem, &mut self.reg.b, h, l), // LD A, (HL) 
             0x7F => ops::copy_value_into_register(&mut self.reg.a, a), // LD A, A          
+            0x80 => ops::add(&mut self.reg.a, b, &mut self.reg.f), // ADD A, B
+            0x81 => ops::add(&mut self.reg.a, c, &mut self.reg.f), // ADD A, C
+            0x82 => ops::add(&mut self.reg.a, d, &mut self.reg.f), // ADD A, D
+            0x83 => ops::add(&mut self.reg.a, e, &mut self.reg.f), // ADD A, E
+            0x84 => ops::add(&mut self.reg.a, h, &mut self.reg.f), // ADD A, H
+            0x85 => ops::add(&mut self.reg.a, l, &mut self.reg.f), // ADD A, L
+            0x86 => ops::add_value_at_address(self.mem, &mut self.reg.a, h, l, &mut self.reg.f),
+            0x87 => ops::add(&mut self.reg.a, a, &mut self.reg.f), // ADD A, A
+            0x88 => return,
             _ => return
         }
     }
