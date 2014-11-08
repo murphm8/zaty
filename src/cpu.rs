@@ -38,7 +38,7 @@ impl<'a> Cpu<'a> {
             0x07 => ops::rotate_left_with_carry(&mut self.reg.a, &mut self.reg.f), // RLC A
             0x08 => ops::write_sp_to_address_immediate(self.mem, &mut self.reg.pc, &self.reg.sp), // LD (nn), SP
             0x09 => ops::add_register_pair_to_register_pair(&mut self.reg.h, &mut self.reg.l, b, c, &mut self.reg.f), // ADD HL, BC
-            0x0A => ops::ld_a_from_reg_pair_as_address(self.mem, &mut self.reg.a, &mut self.reg.b, &mut self.reg.c), // LD A, (BC)
+            0x0A => ops::ld_from_reg_pair_as_address(self.mem, &mut self.reg.a, &mut self.reg.b, &mut self.reg.c), // LD A, (BC)
             0x0B => ops::decrement_register_pair(&mut self.reg.b, &mut self.reg.c), // DEC BC
             0x0C => ops::increment_register(&mut self.reg.c, &mut self.reg.f), // INC C
             0x0D => ops::decrement_register(&mut self.reg.c, &mut self.reg.f), // DEC C
@@ -54,7 +54,7 @@ impl<'a> Cpu<'a> {
             0x17 => ops::rotate_left_with_carry(&mut self.reg.a, &mut self.reg.f), // RL A
             0x18 => ops::jump_by_signed_immediate(self.mem, &mut self.reg.pc), // JR n
             0x19 => ops::add_register_pair_to_register_pair(&mut self.reg.h, &mut self.reg.l, d, e, &mut self.reg.f), // Add HL, DE
-            0x1A => ops::ld_a_from_reg_pair_as_address(self.mem, &mut self.reg.a, &mut self.reg.d, &mut self.reg.e), // LD A, (DE)
+            0x1A => ops::ld_from_reg_pair_as_address(self.mem, &mut self.reg.a, &mut self.reg.d, &mut self.reg.e), // LD A, (DE)
             0x1B => ops::decrement_register_pair(&mut self.reg.d, &mut self.reg.e), // DEC DE
             0x1C => ops::increment_register(&mut self.reg.e, &mut self.reg.f), // INC E
             0x1E => ops::decrement_register(&mut self.reg.e, &mut self.reg.f), // DEC E
@@ -91,6 +91,12 @@ impl<'a> Cpu<'a> {
             0x3D => ops::decrement_register(&mut self.reg.a, &mut self.reg.f), // DEC A
             0x3E => ops::ld_immediate(self.mem, &mut self.reg.pc, &mut self.reg.a), // LD A, d8
             0x3F => ops::reset_flag(&mut self.reg.f, CarryFlag), // CCF
+            0x40 => ops::copy_value_into_register(&mut self.reg.b, b), // LD B, B
+            0x41 => ops::copy_value_into_register(&mut self.reg.b, c), // LD B, C
+            0x42 => ops::copy_value_into_register(&mut self.reg.b, d), // LD B, D
+            0x43 => ops::copy_value_into_register(&mut self.reg.b, e), // LD B, E
+            0x44 => ops::copy_value_into_register(&mut self.reg.b, h), // LD B, H
+            0x45 => ops::copy_value_into_register(&mut self.reg.b, l), // LD B, L
             _ => return
         }
     }

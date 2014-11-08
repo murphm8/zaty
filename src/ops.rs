@@ -178,10 +178,10 @@ pub fn add_register_pair_to_register_pair(rega: &mut Register<u8>, regb: &mut Re
     freg.write(flags);
 }
 
-pub fn ld_a_from_reg_pair_as_address(mem: &Memory, rega: &mut Register<u8>, reg1: &Register<u8>, reg2: &Register<u8>) {
+pub fn ld_from_reg_pair_as_address(mem: &Memory, reg: &mut Register<u8>, reg1: &Register<u8>, reg2: &Register<u8>) {
     let addr = pack_u16(reg1.read(), reg2.read());
     let val = mem.read_byte(addr);
-    rega.write(val);
+    reg.write(val);
 }
 
 pub fn decrement_register_pair(reg1: &mut Register<u8>, reg2: &mut Register<u8>) {
@@ -321,6 +321,19 @@ pub fn reset_flag(freg: &mut Register<Flags>, flag: Flags) {
     let mut f = freg.read();
     f.remove(flag);
     freg.write(f);
+}
+
+pub fn copy_value_into_register(reg: &mut Register<u8>, val: u8) {
+    reg.write(val);
+}
+
+#[test]
+fn test_copy_value_into_register() {
+    let mut reg = Register::new(10);
+
+    copy_value_into_register(&mut reg, 0x18);
+
+    assert!(reg.read() == 0x18);
 }
 
 #[test]
@@ -600,7 +613,7 @@ fn test_decrement_register_pair() {
 }
 
 #[test]
-fn test_ld_a_from_reg_pair_as_address() {
+fn test_ld_from_reg_pair_as_address() {
     let mut mem = Memory::new(65000);
     let mut rega = Register::new(0x00);
 
@@ -609,7 +622,7 @@ fn test_ld_a_from_reg_pair_as_address() {
 
     mem.write_byte(0x1234, 0xAA);
 
-    ld_a_from_reg_pair_as_address(&mem, &mut rega, &reg1, &reg2);
+    ld_from_reg_pair_as_address(&mem, &mut rega, &reg1, &reg2);
 
     assert!(rega.read() == 0xAA);
 }
