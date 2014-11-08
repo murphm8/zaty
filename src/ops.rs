@@ -178,8 +178,8 @@ pub fn add_register_pair_to_register_pair(rega: &mut Register<u8>, regb: &mut Re
     freg.write(flags);
 }
 
-pub fn ld_from_reg_pair_as_address(mem: &Memory, reg: &mut Register<u8>, reg1: &Register<u8>, reg2: &Register<u8>) {
-    let addr = pack_u16(reg1.read(), reg2.read());
+pub fn ld_from_reg_pair_as_address(mem: &Memory, reg: &mut Register<u8>, reg1: u8, reg2: u8) {
+    let addr = pack_u16(reg1, reg2);
     let val = mem.read_byte(addr);
     reg.write(val);
 }
@@ -622,7 +622,7 @@ fn test_ld_from_reg_pair_as_address() {
 
     mem.write_byte(0x1234, 0xAA);
 
-    ld_from_reg_pair_as_address(&mem, &mut rega, &reg1, &reg2);
+    ld_from_reg_pair_as_address(&mem, &mut rega, reg1.read(), reg2.read());
 
     assert!(rega.read() == 0xAA);
 }
