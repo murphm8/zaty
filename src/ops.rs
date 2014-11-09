@@ -2,28 +2,36 @@ use memory::{Memory, pack_u16, high_byte, low_byte, low_nibble, high_nibble};
 use extensions::Incrementor;
 use cpu::{Register, Flags, CarryFlag, HalfCarryFlag, ZeroFlag, SubtractFlag};
 
-fn half_carry(val1: u8, val2: u8) -> bool {
-    return (low_nibble(val1) + low_nibble(val2)) > 0x0F
+fn half_carry(val1: u8, val2: u8, with_carry: bool) -> bool {
+    let mut c = 0;
+    if with_carry { c = 1; }
+    return (low_nibble(val1) + low_nibble(val2) + c) > 0x0F
 }
 
-fn carry(val1: u8, val2: u8) -> bool {
-    return val1 as u16 + val2 as u16 > 0xFF;
+fn carry(val1: u8, val2: u8, with_carry: bool) -> bool {
+    let mut c = 0;
+    if with_carry { c = 1; }
+    return val1 as u16 + val2 as u16 + c > 0xFF;
 }
 
-/// Add the value of two registers and store it in the first register
-pub fn add(first: &mut Register<u8>, second: u8, freg: &mut Register<Flags>) {
-    debug!("add: {} {}", first.read(), second);
+fn add_internal(first: &mut Register<u8>, second: u8, freg: &mut Register<Flags>, includeCarry: bool) {
     let val1 = first.read();
     let val2 = second;
-    let result = val1 + val2;
+    let mut result = val1 + val2;
+    let mut doCarry = false;
+
+    if freg.read().contains(CarryFlag) && includeCarry {
+        doCarry = true;
+        result += 1;
+    }
 
     let mut flags = Flags::empty();
     
-    if half_carry(val1, val2) {
+    if half_carry(val1, val2, doCarry) {
         flags = HalfCarryFlag;
     }
 
-    if carry(val1, val2) {
+    if carry(val1, val2, doCarry) {
         flags = flags | CarryFlag;
     }
 
@@ -33,7 +41,11 @@ pub fn add(first: &mut Register<u8>, second: u8, freg: &mut Register<Flags>) {
 
     first.write(result);
     freg.write(flags);
+}
 
+/// Add the value of two registers and store it in the first register
+pub fn add(first: &mut Register<u8>, second: u8, freg: &mut Register<Flags>) {
+    add_internal(first, second, freg, false);
 }
 
 /// Load the value from one register into another
@@ -330,6 +342,40 @@ pub fn copy_value_into_register(reg: &mut Register<u8>, val: u8) {
 pub fn add_value_at_address(mem: &Memory, reg: &mut Register<u8>, hb: u8, lb: u8, freg: &mut Register<Flags>) {
    let val = mem.read_byte(pack_u16(hb, lb));
    add(reg, val, freg);
+}
+
+pub fn adc(reg: &mut Register<u8>, val: u8, freg: &mut Register<Flags>) {
+    add_internal(reg, val, freg, true);
+}
+
+#[test]
+fn test_adc() {
+    let mut first = Register::new(0x05);
+    let mut flags = Register::new(SubtractFlag | CarryFlag);
+
+    adc(&mut first, 0x0A, &mut flags);
+    assert!(first.read() == 0x10, "Expected: {}, Actual: {}", "16", first.read());
+    assert!(flags.read() == HalfCarryFlag, "HalfCarry should be set");
+
+    flags.write(CarryFlag);
+    let mut a = Register::new(0xFA);
+    
+    adc(&mut a, 0x06, &mut flags);
+
+    assert!(a.read() == 0x01);
+    assert!(flags.read() == CarryFlag | HalfCarryFlag, "HalfCarry and CarryFlag should be set");
+
+    flags.write(CarryFlag);
+    a.write(0);
+
+    adc(&mut a, 0, &mut flags);
+
+    assert!(a.read() == 0x01);
+    assert!(flags.read() == Flags::empty());
+
+    a.write(0);
+    adc(&mut a, 0, &mut flags);
+    assert!(flags.read() == ZeroFlag);
 }
 
 #[test]
