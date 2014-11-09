@@ -163,7 +163,14 @@ impl<'a> Cpu<'a> {
             0x85 => ops::add(&mut self.reg.a, l, &mut self.reg.f), // ADD A, L
             0x86 => ops::add_value_at_address(self.mem, &mut self.reg.a, h, l, &mut self.reg.f),
             0x87 => ops::add(&mut self.reg.a, a, &mut self.reg.f), // ADD A, A
-            0x88 => return,
+            0x88 => ops::adc(&mut self.reg.a, b, &mut self.reg.f), // ADC A, B
+            0x89 => ops::adc(&mut self.reg.a, c, &mut self.reg.f), // ADC A, C
+            0x8A => ops::adc(&mut self.reg.a, d, &mut self.reg.f), // ADC A, D
+            0x8B => ops::adc(&mut self.reg.a, e, &mut self.reg.f), // ADC A, E
+            0x8C => ops::adc(&mut self.reg.a, h, &mut self.reg.f), // ADC A, H
+            0x8D => ops::adc(&mut self.reg.a, l, &mut self.reg.f), // ADC A, L
+            0x8E => return, 
+            0x8F => ops::adc(&mut self.reg.a, a, &mut self.reg.f), // ADC A, A
             _ => return
         }
     }
