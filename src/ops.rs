@@ -348,6 +348,26 @@ pub fn adc(reg: &mut Register<u8>, val: u8, freg: &mut Register<Flags>) {
     add_internal(reg, val, freg, true);
 }
 
+pub fn adc_value_at_address(mem: &Memory, reg: &mut Register<u8>, address: u16, freg: &mut Register<Flags>) {
+    let val = mem.read_byte(address);
+    adc(reg, val, freg);
+}
+
+#[test]
+fn test_adc_value_at_address() {
+    let address = 0x1038;
+    let mut mem = Memory::new(0xFFFF);
+    let val = 0x10;
+    let mut reg = Register::new(0x00);
+    let mut freg = Register::new(CarryFlag);
+
+    mem.write_byte(address, val);
+
+    adc_value_at_address(&mem, &mut reg, address, &mut freg);
+
+    assert!(reg.read() == val + 1);
+}
+
 #[test]
 fn test_adc() {
     let mut first = Register::new(0x05);

@@ -1,4 +1,4 @@
-use memory::{Memory, low_nibble, high_nibble, low_byte, high_byte};
+use memory::{Memory, low_nibble, high_nibble, low_byte, high_byte, pack_u16};
 use extensions::Incrementor;
 use ops::{mod};
 use std::num::One;
@@ -169,7 +169,7 @@ impl<'a> Cpu<'a> {
             0x8B => ops::adc(&mut self.reg.a, e, &mut self.reg.f), // ADC A, E
             0x8C => ops::adc(&mut self.reg.a, h, &mut self.reg.f), // ADC A, H
             0x8D => ops::adc(&mut self.reg.a, l, &mut self.reg.f), // ADC A, L
-            0x8E => return, 
+            0x8E => ops::adc_value_at_address(self.mem, &mut self.reg.a, pack_u16(h, l), &mut self.reg.f), 
             0x8F => ops::adc(&mut self.reg.a, a, &mut self.reg.f), // ADC A, A
             _ => return
         }
