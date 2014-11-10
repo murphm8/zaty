@@ -24,12 +24,12 @@ impl Memory {
     }
 
     pub fn write_byte(&mut self, addr: u16, data: u8) {
-        *self.mem.get_mut(addr as uint) = data;
+        self.mem[addr as uint] = data;
     }
 
     pub fn write_word(&mut self, addr: u16, data: u16) {
-        *self.mem.get_mut(addr as uint) = low_byte(data);
-        *self.mem.get_mut((addr + 1) as uint) = high_byte(data);
+        self.mem[addr as uint] = low_byte(data);
+        self.mem[(addr + 1) as uint] = high_byte(data);
     }
 }
 
@@ -118,13 +118,13 @@ fn test_memory_write_word() {
 fn test_memory_read_byte() {
     let mut memory = Memory::new(65536);
     
-    *memory.mem.get_mut(0) = 0xF1;
+    memory.mem[0] = 0xF1;
     assert!(memory.read_byte(0) == 0xF1);
 
-    *memory.mem.get_mut(0xFFFF) = 0xAB;
+    memory.mem[0xFFFF] = 0xAB;
     assert!(memory.read_byte(0xFFFF) == 0xAB);
 
-    *memory.mem.get_mut(0xABAB) = 0xBB;
+    memory.mem[0xABAB] = 0xBB;
     assert!(memory.read_byte(0xABAB) == 0xBB);
 }
 
@@ -132,15 +132,15 @@ fn test_memory_read_byte() {
 fn test_memory_read_word() {
     let mut memory = Memory::new(65536);
     
-    *memory.mem.get_mut(0) = 0xF1;
-    *memory.mem.get_mut(1) = 0xEA;
+    memory.mem[0] = 0xF1;
+    memory.mem[1] = 0xEA;
     assert!(memory.read_word(0) == 0xEAF1);
 
-    *memory.mem.get_mut(0xFFFE) = 0xBB;
-    *memory.mem.get_mut(0xFFFF) = 0xAB;
+    memory.mem[0xFFFE] = 0xBB;
+    memory.mem[0xFFFF] = 0xAB;
     assert!(memory.read_word(0xFFFE) == 0xABBB);
 
-    *memory.mem.get_mut(0xABAA) = 0x12;
-    *memory.mem.get_mut(0xABAB) = 0xBA;
+    memory.mem[0xABAA] = 0x12;
+    memory.mem[0xABAB] = 0xBA;
     assert!(memory.read_word(0xABAA) == 0xBA12);
 }
