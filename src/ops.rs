@@ -2,13 +2,13 @@ use memory::{Memory, pack_u16, high_byte, low_byte, low_nibble, high_nibble};
 use extensions::Incrementor;
 use cpu::{Register, Flags, CarryFlag, HalfCarryFlag, ZeroFlag, SubtractFlag};
 
-fn half_carry(val1: u8, val2: u8, with_carry: bool) -> bool {
+fn half_carry_for_add(val1: u8, val2: u8, with_carry: bool) -> bool {
     let mut c = 0;
     if with_carry { c = 1; }
     return (low_nibble(val1) + low_nibble(val2) + c) > 0x0F
 }
 
-fn carry(val1: u8, val2: u8, with_carry: bool) -> bool {
+fn carry_for_add(val1: u8, val2: u8, with_carry: bool) -> bool {
     let mut c = 0;
     if with_carry { c = 1; }
     return val1 as u16 + val2 as u16 + c > 0xFF;
@@ -27,11 +27,11 @@ fn add_internal(first: &mut Register<u8>, second: u8, freg: &mut Register<Flags>
 
     let mut flags = Flags::empty();
     
-    if half_carry(val1, val2, doCarry) {
+    if half_carry_for_add(val1, val2, doCarry) {
         flags = HalfCarryFlag;
     }
 
-    if carry(val1, val2, doCarry) {
+    if carry_for_add(val1, val2, doCarry) {
         flags = flags | CarryFlag;
     }
 
@@ -351,6 +351,150 @@ pub fn adc(reg: &mut Register<u8>, val: u8, freg: &mut Register<Flags>) {
 pub fn adc_value_at_address(mem: &Memory, reg: &mut Register<u8>, address: u16, freg: &mut Register<Flags>) {
     let val = mem.read_byte(address);
     adc(reg, val, freg);
+}
+
+fn half_carry_for_subtract(val1: u8, val2: u8, carry: u8) -> bool {
+    return low_nibble(val1) >= (low_nibble(val2) + carry);
+
+}
+
+fn carry_for_subtract(val1: u8, val2: u8, carry: u8) -> bool {
+    return val1 >= (val2 + carry);
+}
+
+pub fn internal_sub(reg: &mut Register<u8>, val: u8, freg: &mut Register<Flags>, with_carry: bool) {
+    let reg_val = reg.read();
+    let mut flags = SubtractFlag;
+    let mut carry = 0;
+    
+    if freg.read().contains(CarryFlag) && with_carry {
+        carry = 1;
+    }
+
+    if half_carry_for_subtract(reg_val, val, carry) {
+        flags.insert(HalfCarryFlag);
+    }
+
+    if carry_for_subtract(reg_val, val, carry) {
+        flags.insert(CarryFlag);
+    }
+
+    let result = reg_val - val - carry;
+    
+    if result == 0 && flags.contains(CarryFlag) {
+        flags.insert(ZeroFlag);
+    }
+    println!("{}", result);
+    reg.write(result);
+    freg.write(flags);
+}
+
+
+pub fn sub(reg: &mut Register<u8>, val: u8, freg: &mut Register<Flags>) {
+    internal_sub(reg, val, freg, false);
+}
+
+pub fn sbc(reg: &mut Register<u8>, val: u8, freg: &mut Register<Flags>) {
+    internal_sub(reg, val, freg, true);
+}
+
+pub fn sub_value_at_address(mem: &Memory, reg: &mut Register<u8>, addr: u16, freg: &mut Register<Flags>) {
+    let val = mem.read_byte(addr);
+    internal_sub(reg, val, freg, false);
+}
+
+pub fn sbc_value_at_address(mem: &Memory, reg: &mut Register<u8>, addr: u16, freg: &mut Register<Flags>) {
+    let val = mem.read_byte(addr);
+    internal_sub(reg, val, freg, true);
+}
+
+#[test]
+fn test_sbc_value_at_address() {
+    let mut mem = Memory::new(0xFFFF);
+    let mut freg = Register::new(CarryFlag);
+    let mut reg = Register::new(0xFF);
+    let addr = 0x1234;
+    mem.write_byte(addr, 0xCD);
+        
+    sbc_value_at_address(&mem, &mut reg, addr, &mut freg);
+    assert!(reg.read() == 0x31);
+    assert!(freg.read() == SubtractFlag | CarryFlag | HalfCarryFlag);
+}
+
+#[test]
+fn test_sub_value_at_address() {
+    let mut mem = Memory::new(0xFFFF);
+    let mut freg = Register::new(CarryFlag);
+    let mut reg = Register::new(0xFF);
+    let addr = 0x1234;
+    mem.write_byte(addr, 0xCD);
+        
+    sub_value_at_address(&mem, &mut reg, addr, &mut freg);
+    assert!(reg.read() == 0x32);
+    assert!(freg.read() == SubtractFlag | CarryFlag | HalfCarryFlag);
+}
+
+#[test]
+fn test_sbc() {
+    let mut reg = Register::new(0xFF);
+    let mut freg = Register::new(Flags::empty());
+
+    sbc(&mut reg, 0x0f, &mut freg);
+    assert!(reg.read() == 0xF0);
+    assert!(freg.read() == SubtractFlag | HalfCarryFlag | CarryFlag);
+
+    reg.write(0xFF);
+    freg.write(CarryFlag);
+    sbc(&mut reg, 0x0f, &mut freg);
+    assert!(reg.read() == 0xEF);
+    assert!(freg.read() == SubtractFlag | CarryFlag);
+
+    reg.write(0xFF);
+    freg.write(CarryFlag);
+    sbc(&mut reg, 0xFF, &mut freg);
+    assert!(reg.read() == 0xFF);
+    assert!(freg.read() == SubtractFlag | CarryFlag);
+
+    reg.write(0xAB);
+    freg.write(CarryFlag);
+    sbc(&mut reg, 0x12, &mut freg);
+    assert!(reg.read() == 0x98);
+    assert!(freg.read() == SubtractFlag | CarryFlag | HalfCarryFlag);
+
+
+}
+
+#[test]
+fn test_sub() {
+    let mut reg = Register::new(0xFF);
+    let mut freg = Register::new(Flags::empty());
+
+    sub(&mut reg, 0x0f, &mut freg);
+    assert!(reg.read() == 0xF0);
+    assert!(freg.read() == SubtractFlag | HalfCarryFlag | CarryFlag);
+
+    reg.write(0x11);
+    sub(&mut reg, 0x11, &mut freg);
+    assert!(reg.read() == 0);
+    assert!(freg.read().contains(SubtractFlag));
+    assert!(freg.read().contains(ZeroFlag));
+    assert!(freg.read().contains(CarryFlag));
+    assert!(freg.read().contains(HalfCarryFlag));
+
+    reg.write(0xA0);
+    sub(&mut reg, 0xB0, &mut freg);
+    assert!(reg.read() == 0xF0);
+    assert!(freg.read() == SubtractFlag | HalfCarryFlag);
+
+    reg.write(0x80);
+    sub(&mut reg, 0x0f, &mut freg);
+    assert!(reg.read() == 0x71);
+    assert!(freg.read() == SubtractFlag | CarryFlag);
+
+    reg.write(0x05);
+    sub(&mut reg, 0xAB, &mut freg);
+    assert!(reg.read() == 0x5A);
+    assert!(freg.read() == SubtractFlag);
 }
 
 #[test]

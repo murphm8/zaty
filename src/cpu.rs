@@ -171,6 +171,22 @@ impl<'a> Cpu<'a> {
             0x8D => ops::adc(&mut self.reg.a, l, &mut self.reg.f), // ADC A, L
             0x8E => ops::adc_value_at_address(self.mem, &mut self.reg.a, pack_u16(h, l), &mut self.reg.f), 
             0x8F => ops::adc(&mut self.reg.a, a, &mut self.reg.f), // ADC A, A
+            0x90 => ops::sub(&mut self.reg.a, b, &mut self.reg.f), // SUB A, B
+            0x91 => ops::sub(&mut self.reg.a, c, &mut self.reg.f), // SUB A, C
+            0x92 => ops::sub(&mut self.reg.a, d, &mut self.reg.f), // SUB A, D
+            0x93 => ops::sub(&mut self.reg.a, e, &mut self.reg.f), // SUB A, E
+            0x94 => ops::sub(&mut self.reg.a, h, &mut self.reg.f), // SUB A, H
+            0x95 => ops::sub(&mut self.reg.a, l, &mut self.reg.f), // SUB A, L
+            0x96 => ops::sub_value_at_address(self.mem, &mut self.reg.a, pack_u16(h, l), &mut self.reg.f),
+            0x97 => ops::sub(&mut self.reg.a, a, &mut self.reg.f), // SUB A, A
+            0x98 => ops::sbc(&mut self.reg.a, b, &mut self.reg.f), // SBC A, B
+            0x99 => ops::sbc(&mut self.reg.a, c, &mut self.reg.f), // SBC A, C
+            0x9A => ops::sbc(&mut self.reg.a, d, &mut self.reg.f), // SBC A, D
+            0x9B => ops::sbc(&mut self.reg.a, e, &mut self.reg.f), // SBC A, E
+            0x9C => ops::sbc(&mut self.reg.a, h, &mut self.reg.f), // SBC A, H
+            0x9D => ops::sbc(&mut self.reg.a, l, &mut self.reg.f), // SBC A, L
+            0x9E => ops::sbc_value_at_address(self.mem, &mut self.reg.a, pack_u16(h, l), &mut self.reg.f), 
+            0x9F => ops::sbc(&mut self.reg.a, a, &mut self.reg.f), // SBC A, A
             _ => return
         }
     }
