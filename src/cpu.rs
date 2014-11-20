@@ -1,7 +1,7 @@
 use memory::{Memory, low_nibble, high_nibble, low_byte, high_byte, pack_u16};
 use extensions::Incrementor;
 use ops::{mod};
-use std::num::One;
+use std::num::{Unsigned, One};
 
 
 pub struct Cpu<'a> {

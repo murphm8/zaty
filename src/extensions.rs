@@ -1,5 +1,5 @@
 use std::cell::Cell;
-use std::num::One;
+use std::num::{Num, One};
 
 pub trait Incrementor {
     fn increment(&self);
