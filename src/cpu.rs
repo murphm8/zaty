@@ -203,6 +203,22 @@ impl<'a> Cpu<'a> {
             0xAD => ops::xor(&mut self.reg.a, l, &mut self.reg.f), // XOR A, L
             0xAE => ops::xor_value_at_address(self.mem, &mut self.reg.a, pack_u16(h, l), &mut self.reg.f), // XOR A, (HL)
             0xAF => ops::xor(&mut self.reg.a, a, &mut self.reg.f), // XOR A, A
+            0xB0 => ops::or(&mut self.reg.a, b, &mut self.reg.f), // OR A, B
+            0xB1 => ops::or(&mut self.reg.a, c, &mut self.reg.f), // OR A, C
+            0xB2 => ops::or(&mut self.reg.a, d, &mut self.reg.f), // OR A, D
+            0xB3 => ops::or(&mut self.reg.a, e, &mut self.reg.f), // OR A, E
+            0xB4 => ops::or(&mut self.reg.a, h, &mut self.reg.f), // OR A, H
+            0xB5 => ops::or(&mut self.reg.a, l, &mut self.reg.f), // OR A, L
+            0xB6 => ops::or_value_at_address(self.mem, &mut self.reg.a, pack_u16(h, l), &mut self.reg.f), // OR A, (HL)
+            0xB7 => ops::or(&mut self.reg.a, a, &mut self.reg.f), // OR A, A
+            0xB8 => ops::compare(&mut self.reg.a, b, &mut self.reg.f), // CP A, B
+            0xB9 => ops::compare(&mut self.reg.a, c, &mut self.reg.f), // CP A, C
+            0xBA => ops::compare(&mut self.reg.a, d, &mut self.reg.f), // CP A, D
+            0xBB => ops::compare(&mut self.reg.a, e, &mut self.reg.f), // CP A, E
+            0xBC => ops::compare(&mut self.reg.a, h, &mut self.reg.f), // CP A, H
+            0xBD => ops::compare(&mut self.reg.a, l, &mut self.reg.f), // CP A, L
+            0xBE => ops::compare_value_at_address(self.mem, &mut self.reg.a, pack_u16(h, l), &mut self.reg.f), // CP A, (HL)
+            0xBF => ops::compare(&mut self.reg.a, a, &mut self.reg.f), // CP A, A
             _ => return
         }
     }

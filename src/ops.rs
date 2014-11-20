@@ -444,6 +444,124 @@ pub fn xor_value_at_address(mem: &Memory, reg: &mut Register<u8>, addr: u16, fre
     xor(reg, val, freg);
 }
 
+pub fn or(reg: &mut Register<u8>, val: u8, freg: &mut Register<Flags>) {
+    let mut flags = Flags::empty();
+
+    let result = reg.read() | val;
+
+    if result == 0 {
+        flags.insert(ZeroFlag);
+    }
+    
+    reg.write(result);
+    freg.write(flags);
+}
+
+pub fn compare(reg: &mut Register<u8>, val: u8, freg: &mut Register<Flags>) {
+    let reg_val = reg.read();
+    let mut flags = SubtractFlag;
+    let mut carry = 0;
+    
+    if half_carry_for_subtract(reg_val, val, carry) {
+        flags.insert(HalfCarryFlag);
+    }
+
+    if carry_for_subtract(reg_val, val, carry) {
+        flags.insert(CarryFlag);
+    }
+
+    if (reg_val == val) && flags.contains(CarryFlag) {
+        flags.insert(ZeroFlag);
+    }
+    freg.write(flags);
+}
+
+pub fn or_value_at_address(mem: &Memory, reg: &mut Register<u8>, addr: u16, freg: &mut Register<Flags>) {
+    let val = mem.read_byte(addr);
+    or(reg, val, freg);
+}
+
+pub fn compare_value_at_address(mem: &Memory, reg: &mut Register<u8>, addr: u16, freg: &mut Register<Flags>) {
+    let val = mem.read_byte(addr);
+    compare(reg, val, freg);
+}
+
+#[test]
+fn test_or() {
+    let mut reg = Register::new(0b01010101);
+    let mut val = 0b11110000;
+    let mut freg = Register::new(Flags::empty());
+
+    or(&mut reg, val, &mut freg);
+    assert!(reg.read() == 0b11110101);
+    assert!(freg.read() == Flags::empty());
+
+    reg.write(0b00000000);
+    val = 0x00;
+    or(&mut reg, val, &mut freg);
+    assert!(reg.read() == 0b00000000);
+    assert!(freg.read() == ZeroFlag);
+
+}
+
+#[test]
+fn test_cp() {
+    let mut reg = Register::new(0xAA);
+    let mut val = 0xBB;
+    let mut freg = Register::new(Flags::empty());
+
+    compare(&mut reg, val, &mut freg);
+    assert!(reg.read() == 0xAA);
+    assert!(freg.read() == SubtractFlag);
+
+    reg.write(0xF0);
+    val = 0xF0;
+    compare(&mut reg, val, &mut freg);
+    assert!(reg.read() == 0xF0);
+    assert!(freg.read() == SubtractFlag | CarryFlag | HalfCarryFlag | ZeroFlag);
+}
+
+#[test]
+fn test_or_value_at_address() {
+    let mut mem = Memory::new(0xFFFF);
+    let mut reg = Register::new(0b01000110);
+    let mut freg = Register::new(Flags::empty());
+    let addr = 0x1239;
+    let mut val = 0b11000011;
+    mem.write_byte(addr, val);
+
+    or_value_at_address(&mem, &mut reg, addr, &mut freg);
+    assert!(reg.read() == 0b11000111);
+    assert!(freg.read() == Flags::empty());
+
+    mem.write_byte(addr, 0b00000000);
+    reg.write(0x00);
+    or_value_at_address(&mem, &mut reg, addr, &mut freg);
+    assert!(reg.read() == 0b00000000);
+    assert!(freg.read() == ZeroFlag);
+}
+
+#[test]
+fn test_compare_value_at_address() {
+    let mut mem = Memory::new(0xFFFF);
+    let mut reg = Register::new(0xBA);
+    let mut freg = Register::new(Flags::empty());
+    let addr = 0x1239;
+    let mut val = 0xAB;
+    mem.write_byte(addr, val);
+
+    compare_value_at_address(&mem, &mut reg, addr, &mut freg);
+    assert!(reg.read() == 0xBA);
+    assert!(freg.read() == SubtractFlag | CarryFlag);
+
+    mem.write_byte(addr, 0xCD);
+    reg.write(0xCD);
+    compare_value_at_address(&mem, &mut reg, addr, &mut freg);
+    assert!(reg.read() == 0xCD);
+    assert!(freg.read() == SubtractFlag | ZeroFlag | HalfCarryFlag | CarryFlag);
+
+}
+
 #[test]
 fn test_and_value_at_address() {
     let mut mem = Memory::new(0xFFFF);
