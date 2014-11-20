@@ -25,6 +25,7 @@ impl<'a> Cpu<'a> {
         let e = self.reg.e.read();
         let h = self.reg.h.read();
         let l = self.reg.l.read();
+        let f = self.reg.f.read();
         let sp = self.reg.sp.read();
 
         match instr {
@@ -219,6 +220,8 @@ impl<'a> Cpu<'a> {
             0xBD => ops::compare(&mut self.reg.a, l, &mut self.reg.f), // CP A, L
             0xBE => ops::compare_value_at_address(self.mem, &mut self.reg.a, pack_u16(h, l), &mut self.reg.f), // CP A, (HL)
             0xBF => ops::compare(&mut self.reg.a, a, &mut self.reg.f), // CP A, A
+            0xC0 => ops::ret(self.mem, &mut self.reg.pc, &mut self.reg.sp, !f.contains(ZeroFlag)), // RET NZ
+            0xC1 => ops::pop(self.mem, &mut self.reg.sp, &mut self.reg.b, &mut self.reg.c), // POP BC           
             _ => return
         }
     }

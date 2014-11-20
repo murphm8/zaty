@@ -486,6 +486,57 @@ pub fn compare_value_at_address(mem: &Memory, reg: &mut Register<u8>, addr: u16,
     compare(reg, val, freg);
 }
 
+fn pop_internal(mem: &Memory, sp: &mut Register<u16>) -> u16 {
+    let val = mem.read_word(sp.read());
+    sp.increment();
+    sp.increment();
+    return val;
+}
+
+pub fn pop(mem: &Memory, sp: &mut Register<u16>, hb: &mut Register<u8>, lb: &mut Register<u8>) {
+    let val = pop_internal(mem, sp);
+
+    hb.write(high_byte(val));
+    lb.write(low_byte(val));
+}
+
+pub fn ret(mem: &Memory, pc: &mut Register<u16>, sp: &mut Register<u16>, should_execute: bool) {
+    if should_execute {
+        let addr = pop_internal(mem, sp); 
+        pc.write(addr);
+    }
+}
+
+#[test]
+fn test_pop() {
+    let mut mem = Memory::new(0xFFFF);
+    let mut sp = Register::new(0xABCD);
+    let mut hb = Register::new(0x00);
+    let mut lb = Register::new(0x00);
+    mem.write_word(sp.read(), 0x1234);
+    
+    pop(&mem, &mut sp, &mut hb, &mut lb);
+    assert!(hb.read() == 0x12);
+    assert!(lb.read() == 0x34);
+    assert!(sp.read() == 0xABCF);
+}
+
+#[test]
+fn test_ret() {
+    let mut mem = Memory::new(0xFFFF);
+    let mut pc = Register::new(0xAB);
+    let mut sp = Register::new(0xABCD);
+    mem.write_word(sp.read(), 0x1234);
+    
+    ret(&mem, &mut pc, &mut sp, false);
+    assert!(pc.read() == 0xAB);
+    assert!(sp.read() == 0xABCD);
+
+    ret(&mem, &mut pc, &mut sp, true);
+    assert!(pc.read() == 0x1234);
+    assert!(sp.read() == 0xABCF);
+}
+
 #[test]
 fn test_or() {
     let mut reg = Register::new(0b01010101);
