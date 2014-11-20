@@ -161,7 +161,7 @@ impl<'a> Cpu<'a> {
             0x83 => ops::add(&mut self.reg.a, e, &mut self.reg.f), // ADD A, E
             0x84 => ops::add(&mut self.reg.a, h, &mut self.reg.f), // ADD A, H
             0x85 => ops::add(&mut self.reg.a, l, &mut self.reg.f), // ADD A, L
-            0x86 => ops::add_value_at_address(self.mem, &mut self.reg.a, h, l, &mut self.reg.f),
+            0x86 => ops::add_value_at_address(self.mem, &mut self.reg.a, h, l, &mut self.reg.f), // ADD A, (HL)
             0x87 => ops::add(&mut self.reg.a, a, &mut self.reg.f), // ADD A, A
             0x88 => ops::adc(&mut self.reg.a, b, &mut self.reg.f), // ADC A, B
             0x89 => ops::adc(&mut self.reg.a, c, &mut self.reg.f), // ADC A, C
@@ -169,7 +169,7 @@ impl<'a> Cpu<'a> {
             0x8B => ops::adc(&mut self.reg.a, e, &mut self.reg.f), // ADC A, E
             0x8C => ops::adc(&mut self.reg.a, h, &mut self.reg.f), // ADC A, H
             0x8D => ops::adc(&mut self.reg.a, l, &mut self.reg.f), // ADC A, L
-            0x8E => ops::adc_value_at_address(self.mem, &mut self.reg.a, pack_u16(h, l), &mut self.reg.f), 
+            0x8E => ops::adc_value_at_address(self.mem, &mut self.reg.a, pack_u16(h, l), &mut self.reg.f), // ADC A, (HL)
             0x8F => ops::adc(&mut self.reg.a, a, &mut self.reg.f), // ADC A, A
             0x90 => ops::sub(&mut self.reg.a, b, &mut self.reg.f), // SUB A, B
             0x91 => ops::sub(&mut self.reg.a, c, &mut self.reg.f), // SUB A, C
@@ -177,7 +177,7 @@ impl<'a> Cpu<'a> {
             0x93 => ops::sub(&mut self.reg.a, e, &mut self.reg.f), // SUB A, E
             0x94 => ops::sub(&mut self.reg.a, h, &mut self.reg.f), // SUB A, H
             0x95 => ops::sub(&mut self.reg.a, l, &mut self.reg.f), // SUB A, L
-            0x96 => ops::sub_value_at_address(self.mem, &mut self.reg.a, pack_u16(h, l), &mut self.reg.f),
+            0x96 => ops::sub_value_at_address(self.mem, &mut self.reg.a, pack_u16(h, l), &mut self.reg.f), // SUB A, (HL)
             0x97 => ops::sub(&mut self.reg.a, a, &mut self.reg.f), // SUB A, A
             0x98 => ops::sbc(&mut self.reg.a, b, &mut self.reg.f), // SBC A, B
             0x99 => ops::sbc(&mut self.reg.a, c, &mut self.reg.f), // SBC A, C
@@ -185,8 +185,24 @@ impl<'a> Cpu<'a> {
             0x9B => ops::sbc(&mut self.reg.a, e, &mut self.reg.f), // SBC A, E
             0x9C => ops::sbc(&mut self.reg.a, h, &mut self.reg.f), // SBC A, H
             0x9D => ops::sbc(&mut self.reg.a, l, &mut self.reg.f), // SBC A, L
-            0x9E => ops::sbc_value_at_address(self.mem, &mut self.reg.a, pack_u16(h, l), &mut self.reg.f), 
+            0x9E => ops::sbc_value_at_address(self.mem, &mut self.reg.a, pack_u16(h, l), &mut self.reg.f),  // SBC A, (HL)
             0x9F => ops::sbc(&mut self.reg.a, a, &mut self.reg.f), // SBC A, A
+            0xA0 => ops::and(&mut self.reg.a, b, &mut self.reg.f), // AND A, B
+            0xA1 => ops::and(&mut self.reg.a, c, &mut self.reg.f), // AND A, C
+            0xA2 => ops::and(&mut self.reg.a, d, &mut self.reg.f), // AND A, D
+            0xA3 => ops::and(&mut self.reg.a, e, &mut self.reg.f), // AND A, E
+            0xA4 => ops::and(&mut self.reg.a, h, &mut self.reg.f), // AND A, H
+            0xA5 => ops::and(&mut self.reg.a, l, &mut self.reg.f), // AND A, L
+            0xA6 => ops::and_value_at_address(self.mem, &mut self.reg.a, pack_u16(h, l), &mut self.reg.f), // AND A, (HL)
+            0xA7 => ops::and(&mut self.reg.a, a, &mut self.reg.f), // AND A, A
+            0xA8 => ops::xor(&mut self.reg.a, b, &mut self.reg.f), // XOR A, B
+            0xA9 => ops::xor(&mut self.reg.a, c, &mut self.reg.f), // XOR A, C
+            0xAA => ops::xor(&mut self.reg.a, d, &mut self.reg.f), // XOR A, D
+            0xAB => ops::xor(&mut self.reg.a, e, &mut self.reg.f), // XOR A, E
+            0xAC => ops::xor(&mut self.reg.a, h, &mut self.reg.f), // XOR A, H
+            0xAD => ops::xor(&mut self.reg.a, l, &mut self.reg.f), // XOR A, L
+            0xAE => ops::xor_value_at_address(self.mem, &mut self.reg.a, pack_u16(h, l), &mut self.reg.f), // XOR A, (HL)
+            0xAF => ops::xor(&mut self.reg.a, a, &mut self.reg.f), // XOR A, A
             _ => return
         }
     }
