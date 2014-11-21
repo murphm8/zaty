@@ -221,7 +221,11 @@ impl<'a> Cpu<'a> {
             0xBE => ops::compare_value_at_address(self.mem, &mut self.reg.a, pack_u16(h, l), &mut self.reg.f), // CP A, (HL)
             0xBF => ops::compare(&mut self.reg.a, a, &mut self.reg.f), // CP A, A
             0xC0 => ops::ret(self.mem, &mut self.reg.pc, &mut self.reg.sp, !f.contains(ZeroFlag)), // RET NZ
-            0xC1 => ops::pop(self.mem, &mut self.reg.sp, &mut self.reg.b, &mut self.reg.c), // POP BC           
+            0xC1 => ops::pop(self.mem, &mut self.reg.sp, &mut self.reg.b, &mut self.reg.c), // POP BC
+            0xC2 => ops::jp_u16_immediate_if_true(self.mem, &mut self.reg.pc, !f.contains(ZeroFlag)), // JP NZ, nn
+            0xC3 => ops::jp_u16_immediate(self.mem, &mut self.reg.pc), // JP nn
+            0xC4 => ops::call_immediate_if_true(self.mem, &mut self.reg.pc, &mut self.reg.sp, !f.contains(ZeroFlag)), // CALL NZ, nn
+            0xC5 => ops::push(self.mem, &mut self.reg.sp, pack_u16(b, c)), // PUSH BC 
             _ => return
         }
     }

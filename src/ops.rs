@@ -486,6 +486,12 @@ pub fn compare_value_at_address(mem: &Memory, reg: &mut Register<u8>, addr: u16,
     compare(reg, val, freg);
 }
 
+pub fn push(mem: &mut Memory, sp: &mut Register<u16>, val: u16) {
+    sp.decrement();
+    sp.decrement();
+    mem.write_word(sp.read(), val);
+}
+
 fn pop_internal(mem: &Memory, sp: &mut Register<u16>) -> u16 {
     let val = mem.read_word(sp.read());
     sp.increment();
@@ -505,6 +511,83 @@ pub fn ret(mem: &Memory, pc: &mut Register<u16>, sp: &mut Register<u16>, should_
         let addr = pop_internal(mem, sp); 
         pc.write(addr);
     }
+}
+
+pub fn jp_u16_immediate(mem: &Memory, pc: &mut Register<u16>) {
+    let addr = mem.read_word(pc.read());
+    pc.write(addr);
+}
+
+pub fn jp_u16_immediate_if_true(mem: &Memory,pc: &mut Register<u16>,should_jump: bool) {
+    if should_jump {
+        jp_u16_immediate(mem, pc);
+    } else {
+        pc.increment();
+        pc.increment();
+    }
+}
+
+pub fn call_immediate_if_true(mem: &mut Memory, pc: &mut Register<u16>, sp: &mut Register<u16>, should_jump: bool) {
+    if should_jump {
+        let new_addr = mem.read_word(pc.read());
+        push(mem, sp, pc.read() + 2);
+        pc.write(new_addr);
+    } else {
+        pc.increment();
+        pc.increment();
+    }
+}
+
+#[test]
+fn test_push() {
+    let mut mem = Memory::new(0xFFFF);
+    let mut sp = Register::new(0xFFAB);
+     
+    push(&mut mem, &mut sp, 0x8735);
+    assert!(sp.read() == 0xFFA9);
+    assert!(mem.read_word(sp.read()) == 0x8735);
+}
+
+#[test]
+fn test_call_immediate_if_true() {
+    let mut mem = Memory::new(0xFFFF);
+    let mut pc = Register::new(0x6542);
+    let mut sp = Register::new(0xFFAB);
+    mem.write_word(pc.read(), 0x1234);
+     
+    call_immediate_if_true(&mut mem, &mut pc, &mut sp, false);
+    assert!(pc.read() == 0x6544);
+    
+    pc.write(0x6542);
+    call_immediate_if_true(&mut mem, &mut pc, &mut sp, true);
+    assert!(pc.read() == 0x1234);
+    assert!(sp.read() == 0xFFA9);
+    assert!(mem.read_word(sp.read()) == 0x6544);
+}
+
+#[test]
+fn test_jp_u16_immediate() {
+    let mut mem = Memory::new(0xFFFF);
+    let mut pc = Register::new(0x6542);
+    mem.write_word(pc.read(), 0x1234);
+     
+    pc.write(0x6542);
+    jp_u16_immediate(&mem, &mut pc);
+    assert!(pc.read() == 0x1234);
+}
+
+#[test]
+fn test_jp_u16_immediate_if_true() {
+    let mut mem = Memory::new(0xFFFF);
+    let mut pc = Register::new(0x6542);
+    mem.write_word(pc.read(), 0x1234);
+     
+    jp_u16_immediate_if_true(&mem, &mut pc, false);
+    assert!(pc.read() == 0x6544);
+    
+    pc.write(0x6542);
+    jp_u16_immediate_if_true(&mem, &mut pc, true);
+    assert!(pc.read() == 0x1234);
 }
 
 #[test]
