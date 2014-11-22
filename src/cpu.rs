@@ -28,6 +28,9 @@ impl<'a> Cpu<'a> {
         let f = self.reg.f.read();
         let sp = self.reg.sp.read();
 
+        let zero = self.reg.f.read().contains(ZeroFlag);
+        let not_zero = !zero;
+
         match instr {
             0x00 => ops::nop(), // NOP
             0x01 => ops::ld_next_two_byte_into_reg_pair(self.mem, &mut self.reg.pc, &mut self.reg.b, &mut self.reg.c), // LD BC, nn
@@ -222,10 +225,12 @@ impl<'a> Cpu<'a> {
             0xBF => ops::compare(&mut self.reg.a, a, &mut self.reg.f), // CP A, A
             0xC0 => ops::ret(self.mem, &mut self.reg.pc, &mut self.reg.sp, !f.contains(ZeroFlag)), // RET NZ
             0xC1 => ops::pop(self.mem, &mut self.reg.sp, &mut self.reg.b, &mut self.reg.c), // POP BC
-            0xC2 => ops::jp_u16_immediate_if_true(self.mem, &mut self.reg.pc, !f.contains(ZeroFlag)), // JP NZ, nn
+            0xC2 => ops::jp_u16_immediate_if_true(self.mem, &mut self.reg.pc, not_zero), // JP NZ, nn
             0xC3 => ops::jp_u16_immediate(self.mem, &mut self.reg.pc), // JP nn
-            0xC4 => ops::call_immediate_if_true(self.mem, &mut self.reg.pc, &mut self.reg.sp, !f.contains(ZeroFlag)), // CALL NZ, nn
+            0xC4 => ops::call_immediate_if_true(self.mem, &mut self.reg.pc, &mut self.reg.sp, not_zero), // CALL NZ, nn
             0xC5 => ops::push(self.mem, &mut self.reg.sp, pack_u16(b, c)), // PUSH BC 
+            0xC6 => ops::add_u8_immediate(self.mem, &mut self.reg.pc, &mut self.reg.a, &mut self.reg.f), // ADD A, n
+            0xC7 => ops::call(self.mem, &mut self.reg.pc, &mut self.reg.sp, 0x00), // RST 0
             _ => return
         }
     }
