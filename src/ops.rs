@@ -354,7 +354,11 @@ pub fn adc_value_at_address(mem: &Memory, reg: &mut Register<u8>, address: u16, 
 }
 
 fn half_carry_for_subtract(val1: u8, val2: u8, carry: u8) -> bool {
-    return low_nibble(val1) >= (low_nibble(val2) + carry);
+    if low_nibble(val2) + carry == 0x10 && val1 >= 0x10 {
+        return true;
+    } else {
+        return low_nibble(val1) >= (low_nibble(val2) + carry);
+    }
 
 }
 
@@ -549,6 +553,63 @@ pub fn call(mem: &mut Memory, pc: &mut Register<u16>, sp: &mut Register<u16>, ad
     pc.write(addr);
 }
 
+pub fn sub_u8_immediate(mem: &Memory, pc: &mut Register<u16>, reg: &mut Register<u8>, freg: &mut Register<Flags>, with_carry: bool) {
+    let val = mem.read_byte(pc.read());
+    internal_sub(reg, val, freg, with_carry);
+    pc.increment();
+}
+
+pub fn reti(mem: &Memory, pc: &mut Register<u16>, sp: &mut Register<u16>, ime: &mut bool) {
+    ret(mem, pc, sp, true);
+    *ime = true;
+}
+
+#[test]
+fn test_reti() {
+    let mut mem = Memory::new(0xFFFF);
+    let mut ime = false;
+    let mut pc = Register::new(0x123);
+    let mut sp = Register::new(0xFFFC);
+    mem.write_word(sp.read(), 0xADCD);
+
+    reti(&mem, &mut pc, &mut sp, &mut ime);
+    assert!(pc.read() == 0xADCD);
+    assert!(ime == true);
+    assert!(sp.read() == 0xFFFE);
+}
+
+#[test]
+fn test_sub_u8_immediate() {
+    let mut mem = Memory::new(0xFFFF);
+    let mut pc = Register::new(0x2736);
+    let mut reg = Register::new(0x35);
+    let mut freg = Register::new(Flags::empty());
+    mem.write_byte(pc.read(), 0x11);
+
+    sub_u8_immediate(&mem, &mut pc, &mut reg, &mut freg, false);
+
+    assert!(pc.read() == 0x2737);
+    assert!(reg.read() == 0x24);
+    assert!(freg.read() == SubtractFlag | HalfCarryFlag | CarryFlag);
+
+    mem.write_byte(pc.read(), 0x0C);
+    sub_u8_immediate(&mem, &mut pc, &mut reg, &mut freg, false);
+
+    assert!(pc.read() == 0x2738);
+    assert!(reg.read() == 0x18);
+    assert!(freg.read() == SubtractFlag | CarryFlag);
+
+    mem.write_byte(pc.read(), 0x0F);
+    freg.write(CarryFlag);
+    sub_u8_immediate(&mem, &mut pc, &mut reg, &mut freg, true);
+
+    assert!(pc.read() == 0x2739);
+    assert!(reg.read() == 0x08);
+    assert!(freg.read() == SubtractFlag | CarryFlag | HalfCarryFlag);
+
+}
+
+#[test]
 fn test_call() {
     let mut mem = Memory::new(0xFFFF);
     let mut pc = Register::new(0x4324);
@@ -860,21 +921,19 @@ fn test_sbc() {
     freg.write(CarryFlag);
     sbc(&mut reg, 0x0f, &mut freg);
     assert!(reg.read() == 0xEF);
-    assert!(freg.read() == SubtractFlag | CarryFlag);
+    assert!(freg.read() == SubtractFlag | HalfCarryFlag | CarryFlag);
 
     reg.write(0xFF);
     freg.write(CarryFlag);
     sbc(&mut reg, 0xFF, &mut freg);
     assert!(reg.read() == 0xFF);
-    assert!(freg.read() == SubtractFlag | CarryFlag);
+    assert!(freg.read() == SubtractFlag | HalfCarryFlag | CarryFlag);
 
     reg.write(0xAB);
     freg.write(CarryFlag);
     sbc(&mut reg, 0x12, &mut freg);
     assert!(reg.read() == 0x98);
     assert!(freg.read() == SubtractFlag | CarryFlag | HalfCarryFlag);
-
-
 }
 
 #[test]

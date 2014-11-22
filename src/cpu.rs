@@ -30,6 +30,8 @@ impl<'a> Cpu<'a> {
 
         let zero = self.reg.f.read().contains(ZeroFlag);
         let not_zero = !zero;
+        let carry = self.reg.f.read().contains(CarryFlag);
+        let no_carry = !carry;
 
         match instr {
             0x00 => ops::nop(), // NOP
@@ -223,7 +225,7 @@ impl<'a> Cpu<'a> {
             0xBD => ops::compare(&mut self.reg.a, l, &mut self.reg.f), // CP A, L
             0xBE => ops::compare_value_at_address(self.mem, &mut self.reg.a, pack_u16(h, l), &mut self.reg.f), // CP A, (HL)
             0xBF => ops::compare(&mut self.reg.a, a, &mut self.reg.f), // CP A, A
-            0xC0 => ops::ret(self.mem, &mut self.reg.pc, &mut self.reg.sp, !f.contains(ZeroFlag)), // RET NZ
+            0xC0 => ops::ret(self.mem, &mut self.reg.pc, &mut self.reg.sp, not_zero), // RET NZ
             0xC1 => ops::pop(self.mem, &mut self.reg.sp, &mut self.reg.b, &mut self.reg.c), // POP BC
             0xC2 => ops::jp_u16_immediate_if_true(self.mem, &mut self.reg.pc, not_zero), // JP NZ, nn
             0xC3 => ops::jp_u16_immediate(self.mem, &mut self.reg.pc), // JP nn
@@ -239,6 +241,22 @@ impl<'a> Cpu<'a> {
             0xCD => ops::call_immediate_if_true(self.mem, &mut self.reg.pc, &mut self.reg.sp, true), // CALL nn
             0xCE => ops::add_u8_immediate(self.mem, &mut self.reg.pc, &mut self.reg.a, &mut self.reg.f, true), // ADC A, n
             0xCF => ops::call(self.mem, &mut self.reg.pc, &mut self.reg.sp, 0x08), // RST 8
+            0xD0 => ops::ret(self.mem, &mut self.reg.pc, &mut self.reg.sp, no_carry), // RET NC
+            0xD1 => ops::pop(self.mem, &mut self.reg.sp, &mut self.reg.d, &mut self.reg.e), // POP DE 
+            0xD2 => ops::jp_u16_immediate_if_true(self.mem, &mut self.reg.pc, no_carry), // JP NC, nn
+            0xD3 => error!("0xD3 should never be executed"), 
+            0xD4 => ops::call_immediate_if_true(self.mem, &mut self.reg.pc, &mut self.reg.sp, no_carry), // CALL NC, nn
+            0xD5 => ops::push(self.mem, &mut self.reg.sp, pack_u16(d, e)), // PUSH DE 
+            0xD6 => ops::sub_u8_immediate(self.mem, &mut self.reg.pc, &mut self.reg.a, &mut self.reg.f, false), // SUB A, n
+            0xD7 => ops::call(self.mem, &mut self.reg.pc, &mut self.reg.sp, 0x10), // RST 10
+            0xD8 => ops::ret(self.mem, &mut self.reg.pc, &mut self.reg.sp, carry), // RET C
+            0xD9 => ops::reti(self.mem, &mut self.reg.pc, &mut self.reg.sp, &mut self.reg.ime), // RETI
+            0xDA => ops::jp_u16_immediate_if_true(self.mem, &mut self.reg.pc, carry), // JP C, nn
+            0xDB => error!("0xDB should never be executed"),
+            0xDC => ops::call_immediate_if_true(self.mem, &mut self.reg.pc, &mut self.reg.sp, carry), // CALL C, nn
+            0xDD => error!("0xDD should never be executed"), 
+            0xDE => ops::sub_u8_immediate(self.mem, &mut self.reg.pc, &mut self.reg.a, &mut self.reg.f, true), // SBC A, n
+            0xDF => ops::call(self.mem, &mut self.reg.pc, &mut self.reg.sp, 0x18), // RST 18
             _ => return
         }
     }
@@ -261,7 +279,9 @@ struct Registers {
     h: Register<u8>, l: Register<u8>, // 8-bit registers
 
     pc: Register<u16>, sp: Register<u16>, // 16-bit registers
-    m: Register<u16>, t: Register<u16> // clock
+    m: Register<u16>, t: Register<u16>, // clock
+
+    ime: bool // Master Interrupt Enable
 }
 
 impl Registers {
@@ -280,7 +300,9 @@ impl Registers {
             sp: Register::new(0xFFFE),
 
             m: Register::new(0),
-            t: Register::new(0)
+            t: Register::new(0),
+
+            ime: true
         }
     }
 }
