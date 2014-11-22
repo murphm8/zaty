@@ -538,9 +538,9 @@ pub fn call_immediate_if_true(mem: &mut Memory, pc: &mut Register<u16>, sp: &mut
     }
 }
 
-pub fn add_u8_immediate(mem: &Memory, pc: &mut Register<u16>, reg: &mut Register<u8>, freg: &mut Register<Flags>) {
+pub fn add_u8_immediate(mem: &Memory, pc: &mut Register<u16>, reg: &mut Register<u8>, freg: &mut Register<Flags>, with_carry: bool) {
     let val = mem.read_byte(pc.read());
-    add_internal(reg, val, freg, false);
+    add_internal(reg, val, freg, with_carry);
     pc.increment();
 }
 
@@ -570,17 +570,25 @@ fn test_add_u8_immediate() {
     let mut freg = Register::new(Flags::empty());
     mem.write_byte(pc.read(), 0x11);
 
-    add_u8_immediate(&mem, &mut pc, &mut reg, &mut freg);
+    add_u8_immediate(&mem, &mut pc, &mut reg, &mut freg, false);
 
     assert!(pc.read() == 0x2737);
     assert!(reg.read() == 0x16);
     assert!(freg.read() == Flags::empty());
 
     mem.write_byte(pc.read(), 0x0C);
-    add_u8_immediate(&mem, &mut pc, &mut reg, &mut freg);
+    add_u8_immediate(&mem, &mut pc, &mut reg, &mut freg, false);
 
     assert!(pc.read() == 0x2738);
     assert!(reg.read() == 0x22);
+    assert!(freg.read() == HalfCarryFlag);
+
+    mem.write_byte(pc.read(), 0x0F);
+    freg.write(CarryFlag);
+    add_u8_immediate(&mem, &mut pc, &mut reg, &mut freg, true);
+
+    assert!(pc.read() == 0x2739);
+    assert!(reg.read() == 0x32);
     assert!(freg.read() == HalfCarryFlag);
 
 }

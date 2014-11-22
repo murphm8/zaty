@@ -229,8 +229,16 @@ impl<'a> Cpu<'a> {
             0xC3 => ops::jp_u16_immediate(self.mem, &mut self.reg.pc), // JP nn
             0xC4 => ops::call_immediate_if_true(self.mem, &mut self.reg.pc, &mut self.reg.sp, not_zero), // CALL NZ, nn
             0xC5 => ops::push(self.mem, &mut self.reg.sp, pack_u16(b, c)), // PUSH BC 
-            0xC6 => ops::add_u8_immediate(self.mem, &mut self.reg.pc, &mut self.reg.a, &mut self.reg.f), // ADD A, n
+            0xC6 => ops::add_u8_immediate(self.mem, &mut self.reg.pc, &mut self.reg.a, &mut self.reg.f, false), // ADD A, n
             0xC7 => ops::call(self.mem, &mut self.reg.pc, &mut self.reg.sp, 0x00), // RST 0
+            0xC8 => ops::ret(self.mem, &mut self.reg.pc, &mut self.reg.sp, zero), // RET Z
+            0xC9 => ops::ret(self.mem, &mut self.reg.pc, &mut self.reg.sp, true), // RET
+            0xCA => ops::jp_u16_immediate_if_true(self.mem, &mut self.reg.pc, zero), // JP Z, nn
+            0xCB => self.extended_opcodes(),
+            0xCC => ops::call_immediate_if_true(self.mem, &mut self.reg.pc, &mut self.reg.sp, zero), // CALL Z, nn
+            0xCD => ops::call_immediate_if_true(self.mem, &mut self.reg.pc, &mut self.reg.sp, true), // CALL nn
+            0xCE => ops::add_u8_immediate(self.mem, &mut self.reg.pc, &mut self.reg.a, &mut self.reg.f, true), // ADC A, n
+            0xCF => ops::call(self.mem, &mut self.reg.pc, &mut self.reg.sp, 0x08), // RST 8
             _ => return
         }
     }
@@ -241,6 +249,9 @@ impl<'a> Cpu<'a> {
         let instr = self.mem.read_byte(self.reg.pc.read());
         self.reg.pc.increment();
         return instr;     
+    }
+
+    fn extended_opcodes(&mut self) {
     }
 }
 
