@@ -14,24 +14,24 @@ fn carry_for_add(val1: u8, val2: u8, with_carry: bool) -> bool {
     return val1 as u16 + val2 as u16 + c > 0xFF;
 }
 
-fn add_internal(first: &mut Register<u8>, second: u8, freg: &mut Register<Flags>, includeCarry: bool) {
+fn add_internal(first: &mut Register<u8>, second: u8, freg: &mut Register<Flags>, with_carry: bool) {
     let val1 = first.read();
     let val2 = second;
     let mut result = val1 + val2;
-    let mut doCarry = false;
+    let mut do_carry = false;
 
-    if freg.read().contains(CarryFlag) && includeCarry {
-        doCarry = true;
+    if freg.read().contains(CarryFlag) && with_carry {
+        do_carry = true;
         result += 1;
     }
 
     let mut flags = Flags::empty();
     
-    if half_carry_for_add(val1, val2, doCarry) {
+    if half_carry_for_add(val1, val2, do_carry) {
         flags = HalfCarryFlag;
     }
 
-    if carry_for_add(val1, val2, doCarry) {
+    if carry_for_add(val1, val2, do_carry) {
         flags = flags | CarryFlag;
     }
 
@@ -57,18 +57,15 @@ pub fn ld_reg_to_reg(target: &mut Register<u8>, source: &Register<u8>) {
 
 /// Loads the memory pointed to by the next two bytes into a register
 pub fn ld_u8_immediate(mem: &Memory, pc: &mut Register<u16>, reg: &mut Register<u8>) {
-    let val = mem.read_byte(pc.read());
+    let val = u8_immediate(mem, pc); 
     debug!("ld_next_byte_to_reg: {} {}", pc.read(), val);
-    pc.increment(); 
     reg.write(val);
 }
 
 /// Loads the next two bytes into the passed in registers
 pub fn ld_u16_immediate(mem: &Memory, pc: &mut Register<u16>, 
                                  hb: &mut Register<u8>, lb: &mut Register<u8>) {
-    let val = mem.read_word(pc.read());
-    pc.increment();
-    pc.increment();
+    let val = u16_immediate(mem, pc); 
     debug!("ld_next_two_bytes_into_reg_pair: {}", val);
     hb.write(high_byte(val));
     lb.write(low_byte(val));
@@ -151,9 +148,7 @@ pub fn rotate_left_with_carry(reg: &mut Register<u8>, freg: &mut Register<Flags>
 
 /// Write sp to address with value of next two bytes
 pub fn write_u16_immediate_address(mem: &mut Memory, pc: &mut Register<u16>, val: u16){
-    let addr = mem.read_word(pc.read());
-    pc.increment();
-    pc.increment();
+    let addr = u16_immediate(mem, pc);
 
     debug!("Writing {} to {}", val, addr);
     mem.write_word(addr, val);
@@ -219,8 +214,7 @@ pub fn rotate_right_with_carry(reg: &mut Register<u8>, freg: &mut Register<Flags
 
 /// Add n to current address and jump to it - n = one byte signed immediate value
 pub fn jump_by_signed_immediate(mem: &Memory, pc: &mut Register<u16>) {
-    let offset = mem.read_byte(pc.read());
-    pc.increment();
+    let offset = u8_immediate(mem, pc); 
     let current_pc = pc.read();
     let mut new_pc = 0;
     if (offset & 0x80) == 0 {
@@ -284,9 +278,7 @@ pub fn complement(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
 
 /// Loads the next two bytes into the passed in register (sp)
 pub fn ld_next_two_bytes_into_reg(mem: &Memory, pc: &mut Register<u16>, reg: &mut Register<u16>) {
-    let val = mem.read_word(pc.read());
-    pc.increment();
-    pc.increment();
+    let val = u16_immediate(mem, pc);
     debug!("ld_next_two_bytes_into_reg: {}", val);
     reg.write(val);
 }
@@ -309,8 +301,7 @@ pub fn decrement_value_at_address(mem: &mut Memory, hb: u8, lb: u8, freg: &mut R
 
 pub fn ld_u8_immediate_into_address(mem: &mut Memory, pc: &mut Register<u16>, hb: u8, lb: u8) {
     let addr = pack_u16(hb, lb);
-    let val = mem.read_byte(pc.read());
-    pc.increment();
+    let val = u8_immediate(mem, pc);
     mem.write_byte(addr, val);
 }
 
@@ -518,7 +509,7 @@ pub fn ret(mem: &Memory, pc: &mut Register<u16>, sp: &mut Register<u16>, should_
 }
 
 pub fn jp_u16_immediate(mem: &Memory, pc: &mut Register<u16>) {
-    let addr = mem.read_word(pc.read());
+    let addr = u16_immediate(mem, pc); 
     pc.write(addr);
 }
 
@@ -533,8 +524,8 @@ pub fn jp_u16_immediate_if_true(mem: &Memory,pc: &mut Register<u16>,should_jump:
 
 pub fn call_immediate_if_true(mem: &mut Memory, pc: &mut Register<u16>, sp: &mut Register<u16>, should_jump: bool) {
     if should_jump {
-        let new_addr = mem.read_word(pc.read());
-        push(mem, sp, pc.read() + 2);
+        let new_addr = u16_immediate(mem, pc); 
+        push(mem, sp, pc.read());
         pc.write(new_addr);
     } else {
         pc.increment();
@@ -543,9 +534,8 @@ pub fn call_immediate_if_true(mem: &mut Memory, pc: &mut Register<u16>, sp: &mut
 }
 
 pub fn add_u8_immediate(mem: &Memory, pc: &mut Register<u16>, reg: &mut Register<u8>, freg: &mut Register<Flags>, with_carry: bool) {
-    let val = mem.read_byte(pc.read());
+    let val = u8_immediate(mem, pc); 
     add_internal(reg, val, freg, with_carry);
-    pc.increment();
 }
 
 pub fn call(mem: &mut Memory, pc: &mut Register<u16>, sp: &mut Register<u16>, addr: u16) {
@@ -554,9 +544,8 @@ pub fn call(mem: &mut Memory, pc: &mut Register<u16>, sp: &mut Register<u16>, ad
 }
 
 pub fn sub_u8_immediate(mem: &Memory, pc: &mut Register<u16>, reg: &mut Register<u8>, freg: &mut Register<Flags>, with_carry: bool) {
-    let val = mem.read_byte(pc.read());
+    let val = u8_immediate(mem, pc);
     internal_sub(reg, val, freg, with_carry);
-    pc.increment();
 }
 
 pub fn reti(mem: &Memory, pc: &mut Register<u16>, sp: &mut Register<u16>, ime: &mut bool) {
@@ -568,6 +557,26 @@ pub fn u8_immediate(mem: &Memory, pc: &mut Register<u16>) -> u8 {
     let val = mem.read_byte(pc.read());
     pc.increment();
     return val;
+}
+
+pub fn u16_immediate(mem: &Memory, pc: &mut Register<u16>) -> u16 {
+    let val = mem.read_word(pc.read());
+    pc.increment();
+    pc.increment();
+    return val;
+}
+
+#[test]
+fn test_u16_immediate() {
+    let mut mem = Memory::new(0xFFFF);
+    let mut pc = Register::new(0x123);
+    mem.write_word(pc.read(), 0xBEEF);
+
+    let val = u16_immediate(&mem, &mut pc);
+
+    assert!(val == 0xBEEF);
+    assert!(pc.read() == 0x125);
+
 }
 
 #[test]
