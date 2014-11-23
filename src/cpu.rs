@@ -50,6 +50,7 @@ impl<'a> Cpu<'a> {
             0x0D => ops::decrement_register(&mut self.reg.c, &mut self.reg.f), // DEC C
             0x0E => ops::ld_u8(&mut self.reg.c, ops::u8_immediate(self.mem, &mut self.reg.pc)), // LD C, n
             0x0F => ops::rotate_right_with_carry(&mut self.reg.a, &mut self.reg.f), // RRC A
+
             0x10 => error!("STOP Op Code not implemented and is being used"), // STOP
             0x11 => ops::ld_u16_immediate(self.mem, &mut self.reg.pc, &mut self.reg.d, &mut self.reg.e), // LD DE, nn
             0x12 => ops::write_value_to_memory_at_address(self.mem, a, d, e), // LD (DE), A
@@ -65,6 +66,7 @@ impl<'a> Cpu<'a> {
             0x1C => ops::increment_register(&mut self.reg.e, &mut self.reg.f), // INC E
             0x1E => ops::decrement_register(&mut self.reg.e, &mut self.reg.f), // DEC E
             0x1F => ops::rotate_right_with_carry(&mut self.reg.a, &mut self.reg.f), // RR A
+
             0x20 => ops::relative_jmp_by_signed_immediate_if_not_flag(self.mem, &mut self.reg.pc, &self.reg.f, ZeroFlag), // JR NZ, n
             0x21 => ops::ld_u16_immediate(self.mem, &mut self.reg.pc, &mut self.reg.h, &mut self.reg.l), // LD HL, nn
             0x22 => ops::write_value_to_memory_at_address_and_increment_register(self.mem, self.reg.a.read(), &mut self.reg.h, &mut self.reg.l), // LDI (HL), A
@@ -81,6 +83,7 @@ impl<'a> Cpu<'a> {
             0x2D => ops::decrement_register(&mut self.reg.l, &mut self.reg.f), // DEC L
             0x2E => ops::ld_u8(&mut self.reg.l, ops::u8_immediate(self.mem, &mut self.reg.pc)), // LD L, d8
             0x2F => ops::complement(&mut self.reg.a, &mut self.reg.f), // CPL 
+
             0x30 => ops::relative_jmp_by_signed_immediate_if_not_flag(self.mem, &mut self.reg.pc, &self.reg.f, CarryFlag), // JR NC, n
             0x31 => ops::ld_next_two_bytes_into_reg(self.mem, &mut self.reg.pc, &mut self.reg.sp), // LD SP, nn
             0x32 => ops::write_value_to_memory_at_address_and_decrement_register(self.mem, self.reg.a.read(), &mut self.reg.h, &mut self.reg.l), // LDI (HL), A
@@ -299,6 +302,24 @@ impl<'a> Cpu<'a> {
         let sp = self.reg.sp.read();
 
         match instr {
+            0x00 => ops::rotate_left_with_carry(&mut self.reg.b, &mut self.reg.f), // RLC B
+            0x01 => ops::rotate_left_with_carry(&mut self.reg.c, &mut self.reg.f), // RLC C
+            0x02 => ops::rotate_left_with_carry(&mut self.reg.d, &mut self.reg.f), // RLC D
+            0x03 => ops::rotate_left_with_carry(&mut self.reg.e, &mut self.reg.f), // RLC E
+            0x04 => ops::rotate_left_with_carry(&mut self.reg.h, &mut self.reg.f), // RLC B
+            0x05 => ops::rotate_left_with_carry(&mut self.reg.l, &mut self.reg.f), // RLC C
+            0x06 => ops::rotate_left_with_carry_at_address(self.mem, pack_u16(h, l), &mut self.reg.f), // RLC (HL) 
+            0x07 => ops::rotate_left_with_carry(&mut self.reg.a, &mut self.reg.f), // RLC E
+            0x08 => ops::rotate_right_with_carry(&mut self.reg.b, &mut self.reg.f), // RRC B
+            0x09 => ops::rotate_right_with_carry(&mut self.reg.c, &mut self.reg.f), // RRC C
+            0x0A => ops::rotate_right_with_carry(&mut self.reg.d, &mut self.reg.f), // RRC D
+            0x0B => ops::rotate_right_with_carry(&mut self.reg.e, &mut self.reg.f), // RRC E
+            0x0C => ops::rotate_right_with_carry(&mut self.reg.h, &mut self.reg.f), // RRC B
+            0x0D => ops::rotate_right_with_carry(&mut self.reg.l, &mut self.reg.f), // RRC C
+            0x0E => ops::rotate_right_with_carry_at_address(self.mem, pack_u16(h, l), &mut self.reg.f), // RRC (HL) 
+            0x0F => ops::rotate_right_with_carry(&mut self.reg.a, &mut self.reg.f), // RRC E
+
+
             0x40 => ops::bit(b, 0, &mut self.reg.f), // BIT 0, B
             0x41 => ops::bit(c, 0, &mut self.reg.f), // BIT 0, C
             0x42 => ops::bit(d, 0, &mut self.reg.f), // BIT 0, D

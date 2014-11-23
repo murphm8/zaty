@@ -127,23 +127,34 @@ pub fn decrement_register(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
     freg.write(flags);
 }
 
-/// Rotate register left
-/// Set ZeroFlag if result is zero
-/// Set CarryFlag if bit 7 is 1
-pub fn rotate_left_with_carry(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
-    let val = reg.read();
+fn internal_rotate_left_with_carry(val: u8, freg: &mut Register<Flags>) -> u8 {
     freg.write(Flags::empty());
+
+    let bit_7 = (val & 0x80) >> 7;
 
     if val == 0 {
         freg.write(ZeroFlag);
-        return;
+        return val;
     }
 
     if val & 0x80 != 0 {
         freg.write(CarryFlag);
     }
 
-    reg.write(val << 1);
+    return (val << 1) | bit_7;
+}
+
+/// Rotate register left
+/// Set ZeroFlag if result is zero
+/// Set CarryFlag if bit 7 is 1
+pub fn rotate_left_with_carry(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
+    let val = internal_rotate_left_with_carry(reg.read(), freg);
+    reg.write(val);
+}
+
+pub fn rotate_left_with_carry_at_address(mem: &mut Memory, addr: u16, freg: &mut Register<Flags>) {
+    let val = internal_rotate_left_with_carry(mem.read_byte(addr), freg);
+    mem.write_byte(addr, val);
 }
 
 /// Write sp to address with value of next two bytes
@@ -199,17 +210,28 @@ pub fn decrement_register_pair(reg1: &mut Register<u8>, reg2: &mut Register<u8>)
     reg2.write(low_byte(ans));
 }
 
-pub fn rotate_right_with_carry(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
-    let val = reg.read();
+fn internal_rotate_right_with_carry(val: u8, freg: &mut Register<Flags>) -> u8 {    
+    let bit_1 = (val & 0x01) << 7;
 
     if val == 0 {
         freg.write(ZeroFlag);
+        return 0;
     } else {
         if val & 0x01 == 1 {
             freg.write(CarryFlag);
-            reg.write(val >> 1);
         }
+        return ((val >> 1) | bit_1);
     }
+}
+
+pub fn rotate_right_with_carry(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
+    let val = internal_rotate_right_with_carry(reg.read(), freg);
+    reg.write(val);
+}
+
+pub fn rotate_right_with_carry_at_address(mem: &mut Memory, addr: u16, freg: &mut Register<Flags>) {
+    let val = internal_rotate_right_with_carry(mem.read_byte(addr), freg);
+    mem.write_byte(addr, val);
 }
 
 /// Add n to current address and jump to it - n = one byte signed immediate value
@@ -618,6 +640,62 @@ pub fn set_at_addr(mem: &mut Memory, address: u16, pos: u8) {
     let val = mem.read_byte(address);
     let reset_val = val | mask;
     mem.write_byte(address, reset_val);
+}
+
+#[test]
+fn test_rotate_right_with_carry_at_address() {
+    let mut val = 0b10011001;
+    let mut mem = Memory::new(0xFFFF);
+    let addr = 0x1237;
+    mem.write_byte(addr, val);
+    let mut freg = Register::new(SubtractFlag | HalfCarryFlag);
+
+    rotate_right_with_carry_at_address(&mut mem, addr, &mut freg);
+
+    assert!(mem.read_byte(addr) == 0b11001100);
+    assert!(freg.read() == CarryFlag);
+
+    mem.write_byte(addr, 0x0);
+    rotate_right_with_carry_at_address(&mut mem, addr, &mut freg);
+
+    assert!(mem.read_byte(addr) == 0x0);
+    assert!(freg.read() == ZeroFlag);
+
+    mem.write_byte(addr, 0x01);
+    freg.write(CarryFlag);
+    rotate_right_with_carry_at_address(&mut mem, addr, &mut freg);
+    assert!(mem.read_byte(addr) == 0x80);
+}
+
+#[test]
+fn test_rotate_left_with_carry_at_address() {
+    let mut val = 0b00001111;
+    let mut mem = Memory::new(0xFFFF);
+    let addr = 0x1423;
+    let mut freg = Register::new(SubtractFlag | HalfCarryFlag);
+
+    mem.write_byte(addr, val);
+    rotate_left_with_carry_at_address(&mut mem, addr, &mut freg);
+    
+    // Rotate should happen
+    assert!(mem.read_byte(addr) == 0b00011110);
+    assert!(freg.read() == Flags::empty());
+    
+    mem.write_byte(addr, 0x00);
+
+    rotate_left_with_carry_at_address(&mut mem, addr, &mut freg);
+
+    // Zero should return zero with ZeroFlag
+    assert!(mem.read_byte(addr) == 0x00);
+    assert!(freg.read() == ZeroFlag);
+
+    mem.write_byte(addr, 0b11001100);
+
+    rotate_left_with_carry_at_address(&mut mem, addr, &mut freg);
+
+    // Carry should get set
+    assert!(mem.read_byte(addr) == 0b10011001);
+    assert!(freg.read() == CarryFlag);
 }
 
 #[test]
@@ -1468,12 +1546,12 @@ fn test_jump_by_signed_immediate() {
 
 #[test]
 fn test_rotate_right_with_carry() {
-    let mut reg = Register::new(0x99);
+    let mut reg = Register::new(0b10011001);
     let mut freg = Register::new(SubtractFlag | HalfCarryFlag);
 
     rotate_right_with_carry(&mut reg, &mut freg);
 
-    assert!(reg.read() == 0x4C);
+    assert!(reg.read() == 0b11001100);
     assert!(freg.read() == CarryFlag);
 
     reg.write(0x0);
@@ -1481,6 +1559,12 @@ fn test_rotate_right_with_carry() {
 
     assert!(reg.read() == 0x0);
     assert!(freg.read() == ZeroFlag);
+
+    reg.write(0x01);
+    freg.write(CarryFlag);
+    rotate_right_with_carry(&mut reg, &mut freg);
+    assert!(reg.read() == 0x80);
+    assert!(freg.read() == CarryFlag);
 }
 
 #[test]
@@ -1566,13 +1650,13 @@ fn test_write_stack_pointer_to_address_immediate() {
 
 #[test]
 fn test_rotate_left_with_carry() {
-    let mut reg = Register::new(0x0F);
+    let mut reg = Register::new(0b00001111);
     let mut freg = Register::new(SubtractFlag | HalfCarryFlag);
 
     rotate_left_with_carry(&mut reg, &mut freg);
     
     // Rotate should happen
-    assert!(reg.read() == 0x1E);
+    assert!(reg.read() == 0b00011110);
     assert!(freg.read() == Flags::empty());
     
     let mut regb = Register::new(0x00);
@@ -1583,12 +1667,12 @@ fn test_rotate_left_with_carry() {
     assert!(regb.read() == 0x00);
     assert!(freg.read() == ZeroFlag);
 
-    let mut regc = Register::new(0xFF);
+    let mut regc = Register::new(0b11001100);
 
     rotate_left_with_carry(&mut regc, &mut freg);
 
     // Carry should get set
-    assert!(regc.read() == 0xFE);
+    assert!(regc.read() == 0b10011001);
     assert!(freg.read() == CarryFlag);
 }
 
