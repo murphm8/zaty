@@ -257,6 +257,22 @@ impl<'a> Cpu<'a> {
             0xDD => error!("0xDD should never be executed"), 
             0xDE => ops::sub_u8_immediate(self.mem, &mut self.reg.pc, &mut self.reg.a, &mut self.reg.f, true), // SBC A, n
             0xDF => ops::call(self.mem, &mut self.reg.pc, &mut self.reg.sp, 0x18), // RST 18
+            0xE0 => return, // LDH (n), A
+            0xE1 => ops::pop(self.mem, &mut self.reg.sp, &mut self.reg.h, &mut self.reg.l), // POP HL 
+            0xE2 => return, // LDH (C), A
+            0xE3 => error!("0xE3 should never be executed"), 
+            0xE4 => error!("0xE4 should never be executed"), 
+            0xE5 => ops::push(self.mem, &mut self.reg.sp, pack_u16(h, l)), // PUSH HL 
+            0xE6 => ops::and(&mut self.reg.a, ops::u8_immediate(self.mem, &mut self.reg.pc), &mut self.reg.f), // AND A, n
+            0xE7 => ops::call(self.mem, &mut self.reg.pc, &mut self.reg.sp, 0x20), // RST 20
+            0xE8 => return, // ADD SP, (signed)n
+            0xE9 => ops::jp(&mut self.reg.pc, pack_u16(h,l)), // JP (HL)
+            0xEA => return, // LD (nn), A 
+            0xEB => error!("0xEB should never be executed"),
+            0xEC => error!("0xEC should never be executed"),
+            0xED => error!("0xED should never be executed"), 
+            0xEE => ops::xor(&mut self.reg.a, ops::u8_immediate(self.mem, &mut self.reg.pc), &mut self.reg.f), // XOR n
+            0xEF => ops::call(self.mem, &mut self.reg.pc, &mut self.reg.sp, 0x28), // RST 28
             _ => return
         }
     }
@@ -270,6 +286,225 @@ impl<'a> Cpu<'a> {
     }
 
     fn extended_opcodes(&mut self) {
+        let instr = self.fetch_instruction(); 
+        
+        let a = self.reg.a.read();
+        let b = self.reg.b.read();
+        let c = self.reg.c.read();
+        let d = self.reg.d.read();
+        let e = self.reg.e.read();
+        let h = self.reg.h.read();
+        let l = self.reg.l.read();
+        let f = self.reg.f.read();
+        let sp = self.reg.sp.read();
+
+        match instr {
+            0x40 => ops::bit(b, 0, &mut self.reg.f), // BIT 0, B
+            0x41 => ops::bit(c, 0, &mut self.reg.f), // BIT 0, C
+            0x42 => ops::bit(d, 0, &mut self.reg.f), // BIT 0, D
+            0x43 => ops::bit(e, 0, &mut self.reg.f), // BIT 0, E
+            0x44 => ops::bit(h, 0, &mut self.reg.f), // BIT 0, H
+            0x45 => ops::bit(l, 0, &mut self.reg.f), // BIT 0, L
+            0x46 => ops::bit(ops::byte_at_address(self.mem, pack_u16(h,l)), 0, &mut self.reg.f), // BIT 0, (HL)
+            0x47 => ops::bit(a, 1, &mut self.reg.f), // BIT 1, A
+            0x48 => ops::bit(b, 1, &mut self.reg.f), // BIT 1, B
+            0x49 => ops::bit(c, 1, &mut self.reg.f), // BIT 1, C
+            0x4A => ops::bit(d, 1, &mut self.reg.f), // BIT 1, D
+            0x4B => ops::bit(e, 1, &mut self.reg.f), // BIT 1, E
+            0x4C => ops::bit(h, 1, &mut self.reg.f), // BIT 1, H
+            0x4D => ops::bit(l, 1, &mut self.reg.f), // BIT 1, L
+            0x4E => ops::bit(ops::byte_at_address(self.mem, pack_u16(h,l)), 1, &mut self.reg.f), // BIT 1, (HL)
+            0x4F => ops::bit(a, 1, &mut self.reg.f), // BIT 1, A
+
+            0x50 => ops::bit(b, 2, &mut self.reg.f), // BIT 2, B
+            0x51 => ops::bit(c, 2, &mut self.reg.f), // BIT 2, C
+            0x52 => ops::bit(d, 2, &mut self.reg.f), // BIT 2, D
+            0x53 => ops::bit(e, 2, &mut self.reg.f), // BIT 2, E
+            0x54 => ops::bit(h, 2, &mut self.reg.f), // BIT 2, H
+            0x55 => ops::bit(l, 2, &mut self.reg.f), // BIT 2, L
+            0x56 => ops::bit(ops::byte_at_address(self.mem, pack_u16(h,l)), 2, &mut self.reg.f), // BIT 2, (HL)
+            0x57 => ops::bit(a, 3, &mut self.reg.f), // BIT 3, A
+            0x58 => ops::bit(b, 3, &mut self.reg.f), // BIT 3, B
+            0x59 => ops::bit(c, 3, &mut self.reg.f), // BIT 3, C
+            0x5A => ops::bit(d, 3, &mut self.reg.f), // BIT 3, D
+            0x5B => ops::bit(e, 3, &mut self.reg.f), // BIT 3, E
+            0x5C => ops::bit(h, 3, &mut self.reg.f), // BIT 3, H
+            0x5D => ops::bit(l, 3, &mut self.reg.f), // BIT 3, L
+            0x5E => ops::bit(ops::byte_at_address(self.mem, pack_u16(h,l)), 3, &mut self.reg.f), // BIT 3, (HL)
+            0x5F => ops::bit(a, 3, &mut self.reg.f), // BIT 3, A
+
+            0x60 => ops::bit(b, 4, &mut self.reg.f), // BIT 4, B
+            0x61 => ops::bit(c, 4, &mut self.reg.f), // BIT 4, C
+            0x62 => ops::bit(d, 4, &mut self.reg.f), // BIT 4, D
+            0x63 => ops::bit(e, 4, &mut self.reg.f), // BIT 4, E
+            0x64 => ops::bit(h, 4, &mut self.reg.f), // BIT 4, H
+            0x65 => ops::bit(l, 4, &mut self.reg.f), // BIT 4, L
+            0x66 => ops::bit(ops::byte_at_address(self.mem, pack_u16(h,l)), 4, &mut self.reg.f), // BIT 4, (HL)
+            0x67 => ops::bit(a, 5, &mut self.reg.f), // BIT 5, A
+            0x68 => ops::bit(b, 5, &mut self.reg.f), // BIT 5, B
+            0x69 => ops::bit(c, 5, &mut self.reg.f), // BIT 5, C
+            0x6A => ops::bit(d, 5, &mut self.reg.f), // BIT 5, D
+            0x6B => ops::bit(e, 5, &mut self.reg.f), // BIT 5, E
+            0x6C => ops::bit(h, 5, &mut self.reg.f), // BIT 5, H
+            0x6D => ops::bit(l, 5, &mut self.reg.f), // BIT 5, L
+            0x6E => ops::bit(ops::byte_at_address(self.mem, pack_u16(h,l)), 5, &mut self.reg.f), // BIT 5, (HL)
+            0x6F => ops::bit(a, 5, &mut self.reg.f), // BIT 5, A
+
+            0x70 => ops::bit(b, 6, &mut self.reg.f), // BIT 6, B
+            0x71 => ops::bit(c, 6, &mut self.reg.f), // BIT 6, C
+            0x72 => ops::bit(d, 6, &mut self.reg.f), // BIT 6, D
+            0x73 => ops::bit(e, 6, &mut self.reg.f), // BIT 6, E
+            0x74 => ops::bit(h, 6, &mut self.reg.f), // BIT 6, H
+            0x75 => ops::bit(l, 6, &mut self.reg.f), // BIT 6, L
+            0x76 => ops::bit(ops::byte_at_address(self.mem, pack_u16(h,l)), 6, &mut self.reg.f), // BIT 6, (HL)
+            0x77 => ops::bit(a, 7, &mut self.reg.f), // BIT 7, A
+            0x78 => ops::bit(b, 7, &mut self.reg.f), // BIT 7, B
+            0x79 => ops::bit(c, 7, &mut self.reg.f), // BIT 7, C
+            0x7A => ops::bit(d, 7, &mut self.reg.f), // BIT 7, D
+            0x7B => ops::bit(e, 7, &mut self.reg.f), // BIT 7, E
+            0x7C => ops::bit(h, 7, &mut self.reg.f), // BIT 7, H
+            0x7D => ops::bit(l, 7, &mut self.reg.f), // BIT 7, L
+            0x7E => ops::bit(ops::byte_at_address(self.mem, pack_u16(h,l)), 7, &mut self.reg.f), // BIT 7, (HL)
+            0x7F => ops::bit(a, 7, &mut self.reg.f), // BIT 7, A
+
+            0x80 => ops::res(&mut self.reg.b, 0), // RES 0, B
+            0x81 => ops::res(&mut self.reg.c, 0), // RES 0, C
+            0x82 => ops::res(&mut self.reg.d, 0), // RES 0, D
+            0x83 => ops::res(&mut self.reg.e, 0), // RES 0, E
+            0x84 => ops::res(&mut self.reg.h, 0), // RES 0, H
+            0x85 => ops::res(&mut self.reg.l, 0), // RES 0, L
+            0x86 => ops::res_at_addr(self.mem, pack_u16(h,l), 0), // RES 0, (HL)
+            0x87 => ops::res(&mut self.reg.a, 0), // RES 0, A
+            0x88 => ops::res(&mut self.reg.b, 1), // RES 1, B
+            0x89 => ops::res(&mut self.reg.c, 1), // RES 1, C
+            0x8A => ops::res(&mut self.reg.d, 1), // RES 1, D
+            0x8B => ops::res(&mut self.reg.e, 1), // RES 1, E
+            0x8C => ops::res(&mut self.reg.h, 1), // RES 1, H
+            0x8D => ops::res(&mut self.reg.l, 1), // RES 1, L
+            0x8E => ops::res_at_addr(self.mem, pack_u16(h,l), 1), // RES 1, (HL)
+            0x8F => ops::res(&mut self.reg.a, 1), // RES 1, A
+
+            0x90 => ops::res(&mut self.reg.b, 2), // RES 2, B
+            0x91 => ops::res(&mut self.reg.c, 2), // RES 2, C
+            0x92 => ops::res(&mut self.reg.d, 2), // RES 2, D
+            0x93 => ops::res(&mut self.reg.e, 2), // RES 2, E
+            0x94 => ops::res(&mut self.reg.h, 2), // RES 2, H
+            0x95 => ops::res(&mut self.reg.l, 2), // RES 2, L
+            0x96 => ops::res_at_addr(self.mem, pack_u16(h,l), 2), // RES 2, (HL)
+            0x97 => ops::res(&mut self.reg.a, 2), // RES 2, A
+            0x98 => ops::res(&mut self.reg.b, 3), // RES 3, B
+            0x99 => ops::res(&mut self.reg.c, 3), // RES 3, C
+            0x9A => ops::res(&mut self.reg.d, 3), // RES 3, D
+            0x9B => ops::res(&mut self.reg.e, 3), // RES 3, E
+            0x9C => ops::res(&mut self.reg.h, 3), // RES 3, H
+            0x9D => ops::res(&mut self.reg.l, 3), // RES 3, L
+            0x9E => ops::res_at_addr(self.mem, pack_u16(h,l), 3), // RES 3, (HL)
+            0x9F => ops::res(&mut self.reg.a, 3), // RES 3, A
+            
+            0xA0 => ops::res(&mut self.reg.b, 4), // RES 4, B
+            0xA1 => ops::res(&mut self.reg.c, 4), // RES 4, C
+            0xA2 => ops::res(&mut self.reg.d, 4), // RES 4, D
+            0xA3 => ops::res(&mut self.reg.e, 4), // RES 4, E
+            0xA4 => ops::res(&mut self.reg.h, 4), // RES 4, H
+            0xA5 => ops::res(&mut self.reg.l, 4), // RES 4, L
+            0xA6 => ops::res_at_addr(self.mem, pack_u16(h,l), 4), // RES 4, (HL)
+            0xA7 => ops::res(&mut self.reg.a, 4), // RES 4, A
+            0xA8 => ops::res(&mut self.reg.b, 5), // RES 5, B
+            0xA9 => ops::res(&mut self.reg.c, 5), // RES 5, C
+            0xAA => ops::res(&mut self.reg.d, 5), // RES 5, D
+            0xAB => ops::res(&mut self.reg.e, 5), // RES 5, E
+            0xAC => ops::res(&mut self.reg.h, 5), // RES 5, H
+            0xAD => ops::res(&mut self.reg.l, 5), // RES 5, L
+            0xAE => ops::res_at_addr(self.mem, pack_u16(h,l), 5), // RES 5, (HL)
+            0xAF => ops::res(&mut self.reg.a, 5), // RES 5, A
+ 
+            0xB0 => ops::res(&mut self.reg.b, 6), // RES 6, B
+            0xB1 => ops::res(&mut self.reg.c, 6), // RES 6, C
+            0xB2 => ops::res(&mut self.reg.d, 6), // RES 6, D
+            0xB3 => ops::res(&mut self.reg.e, 6), // RES 6, E
+            0xB4 => ops::res(&mut self.reg.h, 6), // RES 6, H
+            0xB5 => ops::res(&mut self.reg.l, 6), // RES 6, L
+            0xB6 => ops::res_at_addr(self.mem, pack_u16(h,l), 6), // RES 6, (HL)
+            0xB7 => ops::res(&mut self.reg.a, 6), // RES 6, A
+            0xB8 => ops::res(&mut self.reg.b, 7), // RES 7, B
+            0xB9 => ops::res(&mut self.reg.c, 7), // RES 7, C
+            0xBA => ops::res(&mut self.reg.d, 7), // RES 7, D
+            0xBB => ops::res(&mut self.reg.e, 7), // RES 7, E
+            0xBC => ops::res(&mut self.reg.h, 7), // RES 7, H
+            0xBD => ops::res(&mut self.reg.l, 7), // RES 7, L
+            0xBE => ops::res_at_addr(self.mem, pack_u16(h,l), 7), // RES 7, (HL)
+            0xBF => ops::res(&mut self.reg.a, 7), // RES 7, A
+
+            0xC0 => ops::set(&mut self.reg.b, 0), // SET 0, B
+            0xC1 => ops::set(&mut self.reg.c, 0), // SET 0, C
+            0xC2 => ops::set(&mut self.reg.d, 0), // SET 0, D
+            0xC3 => ops::set(&mut self.reg.e, 0), // SET 0, E
+            0xC4 => ops::set(&mut self.reg.h, 0), // SET 0, H
+            0xC5 => ops::set(&mut self.reg.l, 0), // SET 0, L
+            0xC6 => ops::set_at_addr(self.mem, pack_u16(h,l), 0), // SET 0, (HL)
+            0xC7 => ops::set(&mut self.reg.a, 0), // SET 0, A
+            0xC8 => ops::set(&mut self.reg.b, 1), // SET 1, B
+            0xC9 => ops::set(&mut self.reg.c, 1), // SET 1, C
+            0xCA => ops::set(&mut self.reg.d, 1), // SET 1, D
+            0xCB => ops::set(&mut self.reg.e, 1), // SET 1, E
+            0xCC => ops::set(&mut self.reg.h, 1), // SET 1, H
+            0xCD => ops::set(&mut self.reg.l, 1), // SET 1, L
+            0xCE => ops::set_at_addr(self.mem, pack_u16(h,l), 1), // SET 1, (HL)
+            0xCF => ops::set(&mut self.reg.a, 1), // SET 1, A
+
+            0xD0 => ops::set(&mut self.reg.b, 2), // SET 2, B
+            0xD1 => ops::set(&mut self.reg.c, 2), // SET 2, C
+            0xD2 => ops::set(&mut self.reg.d, 2), // SET 2, D
+            0xD3 => ops::set(&mut self.reg.e, 2), // SET 2, E
+            0xD4 => ops::set(&mut self.reg.h, 2), // SET 2, H
+            0xD5 => ops::set(&mut self.reg.l, 2), // SET 2, L
+            0xD6 => ops::set_at_addr(self.mem, pack_u16(h,l), 2), // SET 2, (HL)
+            0xD7 => ops::set(&mut self.reg.a, 2), // SET 2, A
+            0xD8 => ops::set(&mut self.reg.b, 3), // SET 3, B
+            0xD9 => ops::set(&mut self.reg.c, 3), // SET 3, C
+            0xDA => ops::set(&mut self.reg.d, 3), // SET 3, D
+            0xDB => ops::set(&mut self.reg.e, 3), // SET 3, E
+            0xDC => ops::set(&mut self.reg.h, 3), // SET 3, H
+            0xDD => ops::set(&mut self.reg.l, 3), // SET 3, L
+            0xDE => ops::set_at_addr(self.mem, pack_u16(h,l), 3), // SET 3, (HL)
+            0xDF => ops::set(&mut self.reg.a, 3), // SET 3, A
+            
+            0xE0 => ops::set(&mut self.reg.b, 4), // SET 4, B
+            0xE1 => ops::set(&mut self.reg.c, 4), // SET 4, C
+            0xE2 => ops::set(&mut self.reg.d, 4), // SET 4, D
+            0xE3 => ops::set(&mut self.reg.e, 4), // SET 4, E
+            0xE4 => ops::set(&mut self.reg.h, 4), // SET 4, H
+            0xE5 => ops::set(&mut self.reg.l, 4), // SET 4, L
+            0xE6 => ops::set_at_addr(self.mem, pack_u16(h,l), 4), // SET 4, (HL)
+            0xE7 => ops::set(&mut self.reg.a, 4), // SET 4, A
+            0xE8 => ops::set(&mut self.reg.b, 5), // SET 5, B
+            0xE9 => ops::set(&mut self.reg.c, 5), // SET 5, C
+            0xEA => ops::set(&mut self.reg.d, 5), // SET 5, D
+            0xEB => ops::set(&mut self.reg.e, 5), // SET 5, E
+            0xEC => ops::set(&mut self.reg.h, 5), // SET 5, H
+            0xED => ops::set(&mut self.reg.l, 5), // SET 5, L
+            0xEE => ops::set_at_addr(self.mem, pack_u16(h,l), 5), // SET 5, (HL)
+            0xEF => ops::set(&mut self.reg.a, 5), // SET 5, A
+ 
+            0xF0 => ops::set(&mut self.reg.b, 6), // SET 6, B
+            0xF1 => ops::set(&mut self.reg.c, 6), // SET 6, C
+            0xF2 => ops::set(&mut self.reg.d, 6), // SET 6, D
+            0xF3 => ops::set(&mut self.reg.e, 6), // SET 6, E
+            0xF4 => ops::set(&mut self.reg.h, 6), // SET 6, H
+            0xF5 => ops::set(&mut self.reg.l, 6), // SET 6, L
+            0xF6 => ops::set_at_addr(self.mem, pack_u16(h,l), 6), // SET 6, (HL)
+            0xF7 => ops::set(&mut self.reg.a, 6), // SET 6, A
+            0xF8 => ops::set(&mut self.reg.b, 7), // SET 7, B
+            0xF9 => ops::set(&mut self.reg.c, 7), // SET 7, C
+            0xFA => ops::set(&mut self.reg.d, 7), // SET 7, D
+            0xFB => ops::set(&mut self.reg.e, 7), // SET 7, E
+            0xFC => ops::set(&mut self.reg.h, 7), // SET 7, H
+            0xFD => ops::set(&mut self.reg.l, 7), // SET 7, L
+            0xFE => ops::set_at_addr(self.mem, pack_u16(h,l), 7), // SET 7, (HL)
+            0xFF => ops::set(&mut self.reg.a, 7), // SET 7, A
+            
+            _ => return
+        }
     }
 }
 

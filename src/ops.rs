@@ -566,6 +566,147 @@ pub fn u16_immediate(mem: &Memory, pc: &mut Register<u16>) -> u16 {
     return val;
 }
 
+pub fn jp(pc: &mut Register<u16>, addr: u16) {
+    pc.write(addr);
+}
+
+pub fn bit(reg_val: u8, pos: u8, freg: &mut Register<Flags>) {
+    let mut flags = freg.read();
+    flags.remove(SubtractFlag);
+    flags.insert(HalfCarryFlag);
+    
+    assert!(pos < 8, "Bit positions are 0-7");
+
+    let mask = 0x01 << pos as uint;
+    let val = reg_val & mask;
+
+    if val == 0 {
+        flags.insert(ZeroFlag);
+    } else {
+        flags.remove(ZeroFlag);
+    }
+    freg.write(flags);
+}
+
+pub fn byte_at_address(mem: &Memory, addr: u16) -> u8 {
+    return mem.read_byte(addr);
+}
+
+pub fn res(reg: &mut Register<u8>, pos: u8) {
+    let mask = 0x01 << pos as uint;
+    let val = reg.read();
+    let reset_val = val & (!mask);
+    reg.write(reset_val);
+}
+
+pub fn res_at_addr(mem: &mut Memory, address: u16, pos: u8) {
+    let mask = 0x01 << pos as uint;
+    let val = mem.read_byte(address);
+    let reset_val = val & (!mask);
+    mem.write_byte(address, reset_val);
+}
+
+pub fn set(reg: &mut Register<u8>, pos: u8) {
+    let mask = 0x01 << pos as uint;
+    let val = reg.read();
+    let reset_val = val | mask;
+    reg.write(reset_val);
+}
+
+pub fn set_at_addr(mem: &mut Memory, address: u16, pos: u8) {
+    let mask = 0x01 << pos as uint;
+    let val = mem.read_byte(address);
+    let reset_val = val | mask;
+    mem.write_byte(address, reset_val);
+}
+
+#[test]
+fn test_set_at_addr() {
+    let mut mem = Memory::new(0xFFFF);
+    let addr = 0x1235;
+
+    mem.write_byte(addr, 0b11001100); 
+
+    set_at_addr(&mut mem, addr, 0);
+    assert!(mem.read_byte(addr) == 0b11001101);
+}
+
+#[test]
+fn test_set() {
+    let mut reg = Register::new(0b00110011);
+
+    set(&mut reg, 7);
+    assert!(reg.read() == 0b10110011);
+
+    set(&mut reg, 1);
+    assert!(reg.read() == 0b10110011);
+
+    set(&mut reg, 4);
+    assert!(reg.read() == 0b10110011);
+
+}
+
+#[test]
+fn test_res_at_addr() {
+    let mut mem = Memory::new(0xFFFF);
+    let addr = 0x1235;
+
+    mem.write_byte(addr, 0b11001100); 
+
+    res_at_addr(&mut mem, addr, 2);
+    assert!(mem.read_byte(addr) == 0b11001000);
+    
+}
+
+#[test]
+fn test_res() {
+    let mut reg = Register::new(0b00110011);
+
+    res(&mut reg, 0);
+    assert!(reg.read() == 0b00110010);
+
+    res(&mut reg, 5);
+    assert!(reg.read() == 0b00010010);
+
+    res(&mut reg, 7);
+    assert!(reg.read() == 0b00010010);
+}
+
+#[test]
+fn test_byte_at_address() {
+    let mut mem = Memory::new(0xFFFF);
+    let addr = 0x1234;
+
+    mem.write_byte(addr, 0xFE);
+
+    let val = byte_at_address(&mem, addr);
+    assert!(val == 0xFE);
+}
+
+#[test]
+fn test_bit() {
+    let reg = 0b0001111;
+    let mut freg = Register::new(SubtractFlag | CarryFlag);
+
+    bit(reg, 3, &mut freg);
+
+    assert!(freg.read() == HalfCarryFlag | CarryFlag);
+
+    bit(reg, 7, &mut freg);
+
+    assert!(freg.read() == HalfCarryFlag | CarryFlag | ZeroFlag);
+}
+
+#[test]
+fn test_jp() {
+    let mut pc = Register::new(0x2311);
+    let addr = 0x1223;
+
+    jp(&mut pc, addr);
+
+    assert!(pc.read() == addr);
+}
+
 #[test]
 fn test_u16_immediate() {
     let mut mem = Memory::new(0xFFFF);
