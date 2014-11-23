@@ -1,7 +1,6 @@
 #![feature(tuple_indexing)]
 #![feature(phase)]
 #[phase(plugin, link)] extern crate log;
-extern crate native;
 
 use memory::Memory;
 use cpu::Cpu;
