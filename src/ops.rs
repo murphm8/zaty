@@ -802,6 +802,7 @@ pub fn disable_interrupts(ime: &mut bool) {
 
 pub fn write_value_to_u16_immediate(mem: &mut Memory, pc: &mut Register<u16>, val: u8) {
     let addr = u16_immediate(mem, pc);
+    debug!("write value to u16 immediate val: {:X} addr: {:X}", val, addr);
     mem.write_byte(addr, val);
 }
 
@@ -830,10 +831,44 @@ fn test_disable_interrupts() {
 
 #[test]
 fn test_srl_at_address() {
+    let mut mem = EmptyMemory::new(0xFFFF);
+    let mut freg = Register::new(HalfCarryFlag);
+    let mut val = 0x00;
+    let addr = 0x3727;
+    mem.write_byte(addr, val);
+    srl_at_address(&mut mem, addr, &mut freg);
+
+    assert!(freg.read() == ZeroFlag);
+    assert!(mem.read_byte(addr) == 0x00);
+
+    val = 0b00110011;
+    mem.write_byte(addr, val);
+    srl_at_address(&mut mem, addr, &mut freg);
+    assert!(mem.read_byte(addr) == 0b00011001);
+    assert!(freg.read() == CarryFlag);
+
+    srl_at_address(&mut mem, addr, &mut freg);
+    assert!(mem.read_byte(addr) == 0b00001100);
+    assert!(freg.read() == CarryFlag);
 }
 
 #[test]
 fn test_srl() {
+    let mut reg = Register::new(0x00);
+    let mut freg = Register::new(HalfCarryFlag);
+    srl(&mut reg, &mut freg);
+
+    assert!(freg.read() == ZeroFlag);
+    assert!(reg.read() == 0x00);
+
+    reg.write(0b00110011);
+    srl(&mut reg, &mut freg);
+    assert!(reg.read() == 0b00011001);
+    assert!(freg.read() == CarryFlag);
+
+    srl(&mut reg, &mut freg);
+    assert!(reg.read() == 0b00001100);
+    assert!(freg.read() == CarryFlag);
 }
 
 #[test]
