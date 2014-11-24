@@ -642,6 +642,314 @@ pub fn set_at_addr(mem: &mut Memory, address: u16, pos: u8) {
     mem.write_byte(address, reset_val);
 }
 
+pub fn rotate_left(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
+    let val = internal_rotate_left(reg.read(), freg);
+    reg.write(val);
+}
+
+pub fn rotate_left_at_address(mem: &mut Memory, addr: u16, freg: &mut Register<Flags>) {
+    let val = internal_rotate_left(mem.read_byte(addr), freg);
+    mem.write_byte(addr, val);
+}
+
+fn internal_rotate_left(val: u8, freg: &mut Register<Flags>) -> u8 {
+    let mut carry = 0;
+    if freg.read().contains(CarryFlag) {
+        carry = 1;
+    }
+
+    freg.write(Flags::empty());
+    if val == 0 {
+        freg.write(ZeroFlag);
+        return val;
+    }
+
+    if val & 0x80 != 0 {
+        freg.write(CarryFlag);
+    }
+
+    return (val << 1) | carry;
+}
+
+fn internal_rotate_right(val: u8, freg: &mut Register<Flags>) -> u8 {
+    let mut carry = 0;
+    if freg.read().contains(CarryFlag) {
+        carry = 0x80;
+    }
+
+    freg.write(Flags::empty());
+    if val == 0 {
+        freg.write(ZeroFlag);
+        return val;
+    }
+
+    if val & 0x01 != 0 {
+        freg.write(CarryFlag);
+    }
+
+    return (val >> 1) | carry;
+}
+
+pub fn rotate_right(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
+    let val = internal_rotate_right(reg.read(), freg);
+    reg.write(val);
+}
+
+pub fn rotate_right_at_address(mem: &mut Memory, addr: u16, freg: &mut Register<Flags>) {
+    let val = internal_rotate_right(mem.read_byte(addr), freg);
+    mem.write_byte(addr, val);
+}
+
+pub fn sra(reg: &mut Register<u8>, freg: &Register<Flags>) {
+}
+
+pub fn sra_at_address(mem: &mut Memory, addr: u16, freg: &mut Register<Flags>) {
+}
+
+fn internal_sla(val: u8, freg: &mut Register<Flags>) -> u8 {
+    freg.write(Flags::empty());
+    if val == 0 {
+        freg.write(ZeroFlag);
+        return 0;
+    }
+
+    if val & 0x80 != 0 {
+        freg.write(CarryFlag);
+    }
+
+    return val << 1;
+}
+
+pub fn sla(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
+    let val = internal_sla(reg.read(), freg);
+    reg.write(val);
+}
+
+pub fn sla_at_address(mem: &mut Memory, addr: u16, freg: &mut Register<Flags>) {
+    let val = internal_sla(mem.read_byte(addr), freg);
+    mem.write_byte(addr, val);
+}
+
+#[test]
+fn test_sla_at_address() {
+    let mut val = 0b00001111;
+    let mut mem = Memory::new(0xFFFF);
+    let addr = 0x1423;
+    let mut freg = Register::new(SubtractFlag | HalfCarryFlag);
+
+    mem.write_byte(addr, val);
+    sla_at_address(&mut mem, addr, &mut freg);
+    
+    // Rotate should happen
+    assert!(mem.read_byte(addr) == 0b00011110);
+    assert!(freg.read() == Flags::empty());
+    
+    mem.write_byte(addr, 0x00);
+
+    sla_at_address(&mut mem, addr, &mut freg);
+
+    // Zero should return zero with ZeroFlag
+    assert!(mem.read_byte(addr) == 0x00);
+    assert!(freg.read() == ZeroFlag);
+    
+    mem.write_byte(addr, 0b11001100);
+
+    sla_at_address(&mut mem, addr, &mut freg);
+
+    // Carry should get set
+    assert!(mem.read_byte(addr) == 0b10011000);
+    assert!(freg.read() == CarryFlag);
+    
+    freg.write(CarryFlag);
+    mem.write_byte(addr, 0b11001100);
+
+    sla_at_address(&mut mem, addr, &mut freg);
+
+    // Carry should get set
+    assert!(mem.read_byte(addr) == 0b10011000);
+    assert!(freg.read() == CarryFlag);
+}
+
+#[test]
+fn test_sla() {
+    let mut reg = Register::new(0b00001111);
+    let mut freg = Register::new(SubtractFlag | HalfCarryFlag);
+
+    sla(&mut reg, &mut freg);
+    
+    // Rotate should happen
+    assert!(reg.read() == 0b00011110);
+    assert!(freg.read() == Flags::empty());
+    
+    let mut regb = Register::new(0x00);
+
+    sla(&mut regb, &mut freg);
+
+    // Zero should return zero with ZeroFlag
+    assert!(regb.read() == 0x00);
+    assert!(freg.read() == ZeroFlag);
+
+    let mut regc = Register::new(0b11001100);
+    freg.write(CarryFlag);
+    sla(&mut regc, &mut freg);
+
+    assert!(regc.read() == 0b10011000);
+    assert!(freg.read() == CarryFlag);
+
+    regc.write(0b00110011);
+    sla(&mut regc, &mut freg);
+
+    assert!(regc.read() == 0b01100110);
+    assert!(freg.read() == Flags::empty());
+}
+
+#[test]
+fn test_rotate_right_at_address() {
+    let mut val = 0b00001111;
+    let mut mem = Memory::new(0xFFFF);
+    let addr = 0x1423;
+    let mut freg = Register::new(SubtractFlag | HalfCarryFlag);
+
+    mem.write_byte(addr, val);
+    rotate_right_at_address(&mut mem, addr, &mut freg);
+    
+    // Rotate should happen
+    assert!(mem.read_byte(addr) == 0b00000111);
+    assert!(freg.read() == CarryFlag);
+    
+    mem.write_byte(addr, 0x00);
+    freg.write(Flags::empty());
+
+    rotate_right_at_address(&mut mem, addr, &mut freg);
+
+    // Zero should return zero with ZeroFlag
+    assert!(mem.read_byte(addr) == 0x00);
+    assert!(freg.read() == ZeroFlag);
+    
+    mem.write_byte(addr, 0b11001101);
+
+    rotate_right_at_address(&mut mem, addr, &mut freg);
+
+    // Carry should get set
+    assert!(mem.read_byte(addr) == 0b01100110);
+    assert!(freg.read() == CarryFlag);
+    
+    freg.write(CarryFlag);
+    mem.write_byte(addr, 0b11001100);
+
+    rotate_right_at_address(&mut mem, addr, &mut freg);
+
+    // Carry should get set
+    assert!(mem.read_byte(addr) == 0b11100110);
+    assert!(freg.read() == Flags::empty());
+}
+
+#[test]
+fn test_rotate_right() {
+    let mut reg = Register::new(0b10011001);
+    let mut freg = Register::new(SubtractFlag | HalfCarryFlag);
+
+    rotate_right(&mut reg, &mut freg);
+
+    assert!(reg.read() == 0b01001100);
+    assert!(freg.read() == CarryFlag);
+
+    reg.write(0x0);
+    freg.write(Flags::empty());
+    rotate_right(&mut reg, &mut freg);
+
+    assert!(reg.read() == 0x0);
+    assert!(freg.read() == ZeroFlag);
+
+    reg.write(0x01);
+    freg.write(CarryFlag);
+    rotate_right(&mut reg, &mut freg);
+    assert!(reg.read() == 0x80);
+    assert!(freg.read() == CarryFlag);
+
+    reg.write(0x01);
+    freg.write(Flags::empty());
+    rotate_right(&mut reg, &mut freg);
+    assert!(reg.read() == 0x00);
+    assert!(freg.read() == CarryFlag);
+}
+
+#[test]
+fn test_rotate_left_at_address() {
+    let mut val = 0b00001111;
+    let mut mem = Memory::new(0xFFFF);
+    let addr = 0x1423;
+    let mut freg = Register::new(SubtractFlag | HalfCarryFlag);
+
+    mem.write_byte(addr, val);
+    rotate_left_at_address(&mut mem, addr, &mut freg);
+    
+    // Rotate should happen
+    assert!(mem.read_byte(addr) == 0b00011110);
+    assert!(freg.read() == Flags::empty());
+    
+    mem.write_byte(addr, 0x00);
+
+    rotate_left_at_address(&mut mem, addr, &mut freg);
+
+    // Zero should return zero with ZeroFlag
+    assert!(mem.read_byte(addr) == 0x00);
+    assert!(freg.read() == ZeroFlag);
+    
+    mem.write_byte(addr, 0b11001100);
+
+    rotate_left_at_address(&mut mem, addr, &mut freg);
+
+    // Carry should get set
+    assert!(mem.read_byte(addr) == 0b10011000);
+    assert!(freg.read() == CarryFlag);
+    
+    freg.write(CarryFlag);
+    mem.write_byte(addr, 0b11001100);
+
+    rotate_left_at_address(&mut mem, addr, &mut freg);
+
+    // Carry should get set
+    assert!(mem.read_byte(addr) == 0b10011001);
+    assert!(freg.read() == CarryFlag);
+}
+
+#[test]
+fn test_rotate_left() {
+    let mut reg = Register::new(0b00001111);
+    let mut freg = Register::new(SubtractFlag | HalfCarryFlag);
+
+    rotate_left(&mut reg, &mut freg);
+    
+    // Rotate should happen
+    assert!(reg.read() == 0b00011110);
+    assert!(freg.read() == Flags::empty());
+    
+    let mut regb = Register::new(0x00);
+
+    rotate_left(&mut regb, &mut freg);
+
+    // Zero should return zero with ZeroFlag
+    assert!(regb.read() == 0x00);
+    assert!(freg.read() == ZeroFlag);
+
+    let mut regc = Register::new(0b11001100);
+    freg.write(CarryFlag);
+    rotate_left(&mut regc, &mut freg);
+
+    assert!(regc.read() == 0b10011001);
+    assert!(freg.read() == CarryFlag);
+
+    regc.write(0b00110011);
+    freg.write(Flags::empty());
+    rotate_left(&mut regc, &mut freg);
+
+    assert!(regc.read() == 0b01100110);
+    assert!(freg.read() == Flags::empty());
+
+
+}
+
 #[test]
 fn test_rotate_right_with_carry_at_address() {
     let mut val = 0b10011001;
@@ -665,6 +973,12 @@ fn test_rotate_right_with_carry_at_address() {
     freg.write(CarryFlag);
     rotate_right_with_carry_at_address(&mut mem, addr, &mut freg);
     assert!(mem.read_byte(addr) == 0x80);
+    assert!(freg.read() == CarryFlag);
+    
+    mem.write_byte(addr, 0x01);
+    rotate_right_with_carry_at_address(&mut mem, addr, &mut freg);
+    assert!(mem.read_byte(addr) == 0x80);
+    assert!(freg.read() == CarryFlag);
 }
 
 #[test]

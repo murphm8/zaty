@@ -319,6 +319,39 @@ impl<'a> Cpu<'a> {
             0x0E => ops::rotate_right_with_carry_at_address(self.mem, pack_u16(h, l), &mut self.reg.f), // RRC (HL) 
             0x0F => ops::rotate_right_with_carry(&mut self.reg.a, &mut self.reg.f), // RRC E
 
+            0x10 => ops::rotate_left(&mut self.reg.b, &mut self.reg.f), // RL B
+            0x11 => ops::rotate_left(&mut self.reg.c, &mut self.reg.f), // RL C
+            0x12 => ops::rotate_left(&mut self.reg.d, &mut self.reg.f), // RL D
+            0x13 => ops::rotate_left(&mut self.reg.e, &mut self.reg.f), // RL E
+            0x14 => ops::rotate_left(&mut self.reg.h, &mut self.reg.f), // RL B
+            0x15 => ops::rotate_left(&mut self.reg.l, &mut self.reg.f), // RL C
+            0x16 => ops::rotate_left_at_address(self.mem, pack_u16(h, l), &mut self.reg.f), // RL (HL) 
+            0x17 => ops::rotate_left(&mut self.reg.a, &mut self.reg.f), // RL E
+            0x18 => ops::rotate_right(&mut self.reg.b, &mut self.reg.f), // RR B
+            0x19 => ops::rotate_right(&mut self.reg.c, &mut self.reg.f), // RR C
+            0x1A => ops::rotate_right(&mut self.reg.d, &mut self.reg.f), // RR D
+            0x1B => ops::rotate_right(&mut self.reg.e, &mut self.reg.f), // RR E
+            0x1C => ops::rotate_right(&mut self.reg.h, &mut self.reg.f), // RR B
+            0x1D => ops::rotate_right(&mut self.reg.l, &mut self.reg.f), // RR C
+            0x1E => ops::rotate_right_at_address(self.mem, pack_u16(h, l), &mut self.reg.f), // RR (HL) 
+            0x1F => ops::rotate_right(&mut self.reg.a, &mut self.reg.f), // RR E
+
+            0x20 => ops::sla(&mut self.reg.b, &mut self.reg.f), // RL B
+            0x21 => ops::sla(&mut self.reg.c, &mut self.reg.f), // RL C
+            0x22 => ops::sla(&mut self.reg.d, &mut self.reg.f), // RL D
+            0x23 => ops::sla(&mut self.reg.e, &mut self.reg.f), // RL E
+            0x24 => ops::sla(&mut self.reg.h, &mut self.reg.f), // RL B
+            0x25 => ops::sla(&mut self.reg.l, &mut self.reg.f), // RL C
+            0x26 => ops::sla_at_address(self.mem, pack_u16(h, l), &mut self.reg.f), // RL (HL) 
+            0x27 => ops::sla(&mut self.reg.a, &mut self.reg.f), // RL E
+            0x28 => ops::sra(&mut self.reg.b, &mut self.reg.f), // RR B
+            0x29 => ops::sra(&mut self.reg.c, &mut self.reg.f), // RR C
+            0x2A => ops::sra(&mut self.reg.d, &mut self.reg.f), // RR D
+            0x2B => ops::sra(&mut self.reg.e, &mut self.reg.f), // RR E
+            0x2C => ops::sra(&mut self.reg.h, &mut self.reg.f), // RR B
+            0x2D => ops::sra(&mut self.reg.l, &mut self.reg.f), // RR C
+            0x2E => ops::sra_at_address(self.mem, pack_u16(h, l), &mut self.reg.f), // RR (HL) 
+            0x2F => ops::sra(&mut self.reg.a, &mut self.reg.f), // RR E
 
             0x40 => ops::bit(b, 0, &mut self.reg.f), // BIT 0, B
             0x41 => ops::bit(c, 0, &mut self.reg.f), // BIT 0, C
