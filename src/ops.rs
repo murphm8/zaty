@@ -1,4 +1,4 @@
-use memory::{Memory, pack_u16, high_byte, low_byte, low_nibble, high_nibble};
+use memory::{EmptyMemory, Memory, pack_u16, high_byte, low_byte, low_nibble, high_nibble};
 use extensions::Incrementor;
 use cpu::{Register, Flags, CarryFlag, HalfCarryFlag, ZeroFlag, SubtractFlag};
 
@@ -807,7 +807,7 @@ pub fn write_value_to_u16_immediate(mem: &mut Memory, pc: &mut Register<u16>, va
 
 #[test]
 fn test_write_value_to_u16_immediate() {
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let addr = 0x8284;
     let val = 0x92;
     let mut pc = Register::new(0x1234);
@@ -838,7 +838,7 @@ fn test_srl() {
 
 #[test]
 fn test_swap_at_address() {
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let addr = 0x2321;
     let mut freg = Register::new(Flags::empty());
     mem.write_byte(addr, 0xCB);
@@ -865,7 +865,7 @@ fn test_swap() {
 fn test_sra_at_address() {
     let mut val = 0b10010001;
     let mut freg = Register::new(Flags::empty());
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let addr = 0x2372;
 
     mem.write_byte(addr, val);
@@ -921,7 +921,7 @@ fn test_sra() {
 #[test]
 fn test_sla_at_address() {
     let mut val = 0b00001111;
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let addr = 0x1423;
     let mut freg = Register::new(SubtractFlag | HalfCarryFlag);
 
@@ -994,7 +994,7 @@ fn test_sla() {
 #[test]
 fn test_rotate_right_at_address() {
     let mut val = 0b00001111;
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let addr = 0x1423;
     let mut freg = Register::new(SubtractFlag | HalfCarryFlag);
 
@@ -1065,7 +1065,7 @@ fn test_rotate_right() {
 #[test]
 fn test_rotate_left_at_address() {
     let mut val = 0b00001111;
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let addr = 0x1423;
     let mut freg = Register::new(SubtractFlag | HalfCarryFlag);
 
@@ -1141,7 +1141,7 @@ fn test_rotate_left() {
 #[test]
 fn test_rotate_right_with_carry_at_address() {
     let mut val = 0b10011001;
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let addr = 0x1237;
     mem.write_byte(addr, val);
     let mut freg = Register::new(SubtractFlag | HalfCarryFlag);
@@ -1172,7 +1172,7 @@ fn test_rotate_right_with_carry_at_address() {
 #[test]
 fn test_rotate_left_with_carry_at_address() {
     let mut val = 0b00001111;
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let addr = 0x1423;
     let mut freg = Register::new(SubtractFlag | HalfCarryFlag);
 
@@ -1202,7 +1202,7 @@ fn test_rotate_left_with_carry_at_address() {
 
 #[test]
 fn test_set_at_addr() {
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let addr = 0x1235;
 
     mem.write_byte(addr, 0b11001100); 
@@ -1228,7 +1228,7 @@ fn test_set() {
 
 #[test]
 fn test_res_at_addr() {
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let addr = 0x1235;
 
     mem.write_byte(addr, 0b11001100); 
@@ -1254,7 +1254,7 @@ fn test_res() {
 
 #[test]
 fn test_byte_at_address() {
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let addr = 0x1234;
 
     mem.write_byte(addr, 0xFE);
@@ -1289,7 +1289,7 @@ fn test_jp() {
 
 #[test]
 fn test_u16_immediate() {
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let mut pc = Register::new(0x123);
     mem.write_word(pc.read(), 0xBEEF);
 
@@ -1302,7 +1302,7 @@ fn test_u16_immediate() {
 
 #[test]
 fn test_u8_immediate() {
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let mut pc = Register::new(0x123);
     mem.write_byte(pc.read(), 0x43);
 
@@ -1314,7 +1314,7 @@ fn test_u8_immediate() {
 
 #[test]
 fn test_reti() {
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let mut ime = false;
     let mut pc = Register::new(0x123);
     let mut sp = Register::new(0xFFFC);
@@ -1328,7 +1328,7 @@ fn test_reti() {
 
 #[test]
 fn test_sub_u8_immediate() {
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let mut pc = Register::new(0x2736);
     let mut reg = Register::new(0x35);
     let mut freg = Register::new(Flags::empty());
@@ -1359,7 +1359,7 @@ fn test_sub_u8_immediate() {
 
 #[test]
 fn test_call() {
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let mut pc = Register::new(0x4324);
     let mut sp = Register::new(0xFFFE);
     let addr = 0x10;
@@ -1373,7 +1373,7 @@ fn test_call() {
 
 #[test]
 fn test_add_u8_immediate() {
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let mut pc = Register::new(0x2736);
     let mut reg = Register::new(0x05);
     let mut freg = Register::new(Flags::empty());
@@ -1404,7 +1404,7 @@ fn test_add_u8_immediate() {
 
 #[test]
 fn test_push() {
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let mut sp = Register::new(0xFFAB);
      
     push(&mut mem, &mut sp, 0x8735);
@@ -1414,7 +1414,7 @@ fn test_push() {
 
 #[test]
 fn test_call_immediate_if_true() {
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let mut pc = Register::new(0x6542);
     let mut sp = Register::new(0xFFAB);
     mem.write_word(pc.read(), 0x1234);
@@ -1431,7 +1431,7 @@ fn test_call_immediate_if_true() {
 
 #[test]
 fn test_jp_u16_immediate() {
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let mut pc = Register::new(0x6542);
     mem.write_word(pc.read(), 0x1234);
      
@@ -1442,7 +1442,7 @@ fn test_jp_u16_immediate() {
 
 #[test]
 fn test_jp_u16_immediate_if_true() {
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let mut pc = Register::new(0x6542);
     mem.write_word(pc.read(), 0x1234);
      
@@ -1456,7 +1456,7 @@ fn test_jp_u16_immediate_if_true() {
 
 #[test]
 fn test_pop() {
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let mut sp = Register::new(0xABCD);
     let mut hb = Register::new(0x00);
     let mut lb = Register::new(0x00);
@@ -1470,7 +1470,7 @@ fn test_pop() {
 
 #[test]
 fn test_ret() {
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let mut pc = Register::new(0xAB);
     let mut sp = Register::new(0xABCD);
     mem.write_word(sp.read(), 0x1234);
@@ -1521,7 +1521,7 @@ fn test_cp() {
 
 #[test]
 fn test_or_value_at_address() {
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let mut reg = Register::new(0b01000110);
     let mut freg = Register::new(Flags::empty());
     let addr = 0x1239;
@@ -1541,7 +1541,7 @@ fn test_or_value_at_address() {
 
 #[test]
 fn test_compare_value_at_address() {
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let mut reg = Register::new(0xBA);
     let mut freg = Register::new(Flags::empty());
     let addr = 0x1239;
@@ -1562,7 +1562,7 @@ fn test_compare_value_at_address() {
 
 #[test]
 fn test_and_value_at_address() {
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let mut reg = Register::new(0b01000110);
     let mut freg = Register::new(Flags::empty());
     let addr = 0x1239;
@@ -1597,7 +1597,7 @@ fn test_and() {
 
 #[test]
 fn test_xor_at_address() {
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let mut reg = Register::new(0b00111100);
     let mut freg = Register::new(Flags::empty());
     let addr = 0x1239;
@@ -1632,7 +1632,7 @@ fn test_xor() {
 
 #[test]
 fn test_sbc_value_at_address() {
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let mut freg = Register::new(CarryFlag);
     let mut reg = Register::new(0xFF);
     let addr = 0x1234;
@@ -1645,7 +1645,7 @@ fn test_sbc_value_at_address() {
 
 #[test]
 fn test_sub_value_at_address() {
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let mut freg = Register::new(CarryFlag);
     let mut reg = Register::new(0xFF);
     let addr = 0x1234;
@@ -1720,7 +1720,7 @@ fn test_sub() {
 #[test]
 fn test_adc_value_at_address() {
     let address = 0x1038;
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let val = 0x10;
     let mut reg = Register::new(0x00);
     let mut freg = Register::new(CarryFlag);
@@ -1765,7 +1765,7 @@ fn test_adc() {
 #[test]
 fn test_add_value_at_address() {
     let mut first = Register::new(0x05);
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let mut flags = Register::new(SubtractFlag | CarryFlag);
 
     mem.write_byte(0x8476, 0x0B);
@@ -1810,7 +1810,7 @@ fn test_reset_flag() {
 
 #[test]
 fn test_ld_from_address_pointed_to_by_register_pair_and_decrement_register_pair() {
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let mut reg = Register::new(0x12);
     let mut high_byte = Register::new(0xAB);
     let mut low_byte = Register::new(0xCD);
@@ -1833,7 +1833,7 @@ fn test_set_flag() {
 
 #[test]
 fn test_ld_u8_immediate_into_address() {
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let mut pc = Register::new(0xAD12);
     mem.write_byte(0xAD12, 0xBB);
 
@@ -1845,7 +1845,7 @@ fn test_ld_u8_immediate_into_address() {
 
 #[test]
 fn test_decrement_value_at_address() {
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let mut freg = Register::new(CarryFlag);
     mem.write_byte(0x1010, 1);
 
@@ -1872,7 +1872,7 @@ fn test_decrement_value_at_address() {
 
 #[test]
 fn test_increment_value_at_address() {
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let mut freg = Register::new(CarryFlag);
 
     increment_value_at_address(&mut mem, 0x10, 0x10, &mut freg);
@@ -1898,7 +1898,7 @@ fn test_increment_value_at_address() {
 
 #[test]
 fn test_write_value_to_memory_at_address_and_decrement_register() {
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let mut val = 0x8;
     let mut high_byte = Register::new(0x12);
     let mut low_byte = Register::new(0x34);
@@ -1917,7 +1917,7 @@ fn test_write_value_to_memory_at_address_and_decrement_register() {
 
 #[test]
 fn test_ld_next_two_bytes_into_reg() {
-    let mut mem = Memory::new(65536);
+    let mut mem = EmptyMemory::new(65536);
     let mut pc = Register::new(11);
     let mut reg = Register::new(0);
     
@@ -1948,7 +1948,7 @@ fn test_complement() {
 
 #[test]
 fn test_ld_from_address_pointed_to_by_register_pair_and_increment_register_pair() {
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let mut reg = Register::new(0x12);
     let mut high_byte = Register::new(0xAB);
     let mut low_byte = Register::new(0xCD);
@@ -1962,7 +1962,7 @@ fn test_ld_from_address_pointed_to_by_register_pair_and_increment_register_pair(
 
 #[test]
 fn test_relative_jmp_by_signed_immediate_if_flag() {
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let mut pc = Register::new(0x1234);
     let mut freg = Register::new(Flags::empty());
 
@@ -1988,7 +1988,7 @@ fn test_relative_jmp_by_signed_immediate_if_flag() {
 
 #[test]
 fn test_write_value_to_memory_at_address_and_increment_register() {
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let mut val = 0x8;
     let mut high_byte = Register::new(0x12);
     let mut low_byte = Register::new(0x34);
@@ -2006,7 +2006,7 @@ fn test_write_value_to_memory_at_address_and_increment_register() {
 
 #[test]
 fn test_relative_jmp_by_signed_immediate_if_not_flag() {
-    let mut mem = Memory::new(0xFFFF);
+    let mut mem = EmptyMemory::new(0xFFFF);
     let mut pc = Register::new(0x1234);
     let mut freg = Register::new(Flags::empty());
 
@@ -2030,7 +2030,7 @@ fn test_relative_jmp_by_signed_immediate_if_not_flag() {
 
 #[test]
 fn test_jump_by_signed_immediate() {
-    let mut mem = Memory::new(0x10000);
+    let mut mem = EmptyMemory::new(0x10000);
     let mut pc = Register::new(0x0101);
     // 0x8A = -10 as i8
     mem.write_byte(0x0101, 0x8A);
@@ -2082,7 +2082,7 @@ fn test_decrement_register_pair() {
 
 #[test]
 fn test_ld_from_reg_pair_as_address() {
-    let mut mem = Memory::new(65000);
+    let mut mem = EmptyMemory::new(65000);
     let mut rega = Register::new(0x00);
 
     let mut reg1 = Register::new(0x12);
@@ -2140,7 +2140,7 @@ fn test_add_register_pair_to_register_pair() {
 fn test_write_stack_pointer_to_address_immediate() {
     let mut sp = Register::new(0xBEEF);
     let mut pc = Register::new(0x111);
-    let mut mem = Memory::new(65647);
+    let mut mem = EmptyMemory::new(65647);
 
     mem.write_byte(0x111, 0xAD);
     mem.write_byte(0x112, 0xDE);
@@ -2260,7 +2260,7 @@ fn test_add_reg_with_reg() {
 
 #[test]
 fn test_ld_u8_immediate() {
-    let mut mem = Memory::new(65536);
+    let mut mem = EmptyMemory::new(65536);
     let mut pc = Register::new(11);
     let mut reg = Register::new(0);
 
@@ -2285,7 +2285,7 @@ fn test_ld_reg_to_reg() {
 
 #[test]
 fn test_ld_u16_immediate() {
-    let mut mem = Memory::new(65536);
+    let mut mem = EmptyMemory::new(65536);
     let mut pc = Register::new(11);
     let mut reg = Register::new(0);
     let mut reg2 = Register::new(0);
@@ -2300,7 +2300,7 @@ fn test_ld_u16_immediate() {
 
 #[test]
 fn test_write_value_to_memory_at_address() {
-    let mut mem = Memory::new(65536);
+    let mut mem = EmptyMemory::new(65536);
     let mut msb = 0xFF;
     let mut lsb = 0x11;
     let val = 100;

@@ -5,39 +5,80 @@ use std::iter::range_step_inclusive;
 use std::path::Path;
 
 
-pub struct Memory {
+pub trait Memory {
+    fn read_byte(&self, addr: u16) -> u8;
+    fn read_word(&self, addr: u16) -> u16;
+    fn write_byte(&mut self, addr: u16, data: u8);
+    fn write_word(&mut self, addr: u16, data: u16) ;
+}
+
+pub struct EmptyMemory {
+    mem: Vec<u8>
+}
+
+impl EmptyMemory {
+    pub fn new(size: uint) -> EmptyMemory {
+        let mut mem = Vec::from_elem(size, 0);
+        return EmptyMemory{ mem: mem } 
+    }
+}
+
+impl Memory for EmptyMemory {
+    fn read_byte(&self, addr: u16) -> u8 {
+        return self.mem[addr as uint];
+    }
+
+    fn read_word(&self, addr: u16) -> u16 {
+        let high_byte = self.mem[(addr as uint) + 1];
+        let low_byte = self.mem[addr as uint];
+        return ((high_byte as u16) << 8) + (low_byte as u16);
+    }
+
+    fn write_byte(&mut self, addr: u16, data: u8) {
+        self.mem[addr as uint] = data;
+    }
+
+    fn write_word(&mut self, addr: u16, data: u16) {
+        self.mem[addr as uint] = low_byte(data);
+        self.mem[(addr as uint) + 1] = high_byte(data);
+    }
+}
+
+pub struct GameboyMemory {
     rom: &'static [u8],
     mem: Vec<u8>,
     rom_bank: uint
 }
 
-impl Memory {
-    pub fn new(size: uint) -> Memory {
-        let mut mem = Vec::from_elem(size, 0);
-        return Memory{ mem: mem, rom: include_bin!("test_instrs.gb"), rom_bank: 1 } 
-    }
-
-    pub fn read_byte(&self, addr: u16) -> u8 {
+impl Memory for GameboyMemory {
+    
+    fn read_byte(&self, addr: u16) -> u8 {
         return self.read_internal(addr as uint);
     }
 
-    pub fn read_word(&self, addr: u16) -> u16 {
+    fn read_word(&self, addr: u16) -> u16 {
         let high_byte = self.read_internal((addr + 1) as uint);
         let low_byte = self.read_internal(addr as uint);
         return ((high_byte as u16) << 8) + (low_byte as u16);
     }
 
-    pub fn write_byte(&mut self, addr: u16, data: u8) {
+    fn write_byte(&mut self, addr: u16, data: u8) {
         self.write_internal(addr as uint, data);
     }
 
-    pub fn write_word(&mut self, addr: u16, data: u16) {
+    fn write_word(&mut self, addr: u16, data: u16) {
         self.write_internal(addr as uint, low_byte(data));
         self.write_internal((addr as uint) + 1, high_byte(data));
     }
+}
+
+impl GameboyMemory {
+    pub fn new(size: uint) -> GameboyMemory {
+        let mut mem = Vec::from_elem(size, 0);
+        return GameboyMemory{ mem: mem, rom: include_bin!("test_instrs.gb"), rom_bank: 1 } 
+    }
 
     fn write_internal(&mut self, addr: uint, val: u8) {
-        /*
         if addr >= 0x0100 && addr <= 0x014F {
             return;
         }
@@ -45,12 +86,10 @@ impl Memory {
             self.rom_bank = val as uint;
             return;
         }
-        */
         self.mem[addr] = val;
     }
 
     fn read_internal(&self, addr: uint) -> u8 {
-        /*
         if addr >= 0x0100 && addr <= 0x7FFF {
             if addr <= 0x3FFF {
                 return self.rom[addr];
@@ -59,9 +98,9 @@ impl Memory {
                 return self.rom[real_addr];
             }
         }
-        */
         return self.mem[addr];
     }
+
 }
 
 pub fn high_nibble(num: u8) -> u8 {
@@ -119,8 +158,8 @@ fn test_pack_u16() {
 }
 
 #[test]
-fn test_memory_write_byte() {
-    let mut memory = Memory::new(65536);
+fn test_emptymemory_write_byte() {
+    let mut memory = EmptyMemory::new(65536);
     let mut rng = rand::task_rng();
 
     for n in range_inclusive(0, 0xFFFF)
@@ -132,8 +171,8 @@ fn test_memory_write_byte() {
 }
 
 #[test]
-fn test_memory_write_word() {
-    let mut memory = Memory::new(65536);
+fn test_emptymemory_write_word() {
+    let mut memory = EmptyMemory::new(65536);
     let mut rng = rand::task_rng();
 
     for n in range_step_inclusive(0, 0xFFFF, 2)
@@ -146,8 +185,8 @@ fn test_memory_write_word() {
 }
 
 #[test]
-fn test_memory_read_byte() {
-    let mut memory = Memory::new(65536);
+fn test_emptymemory_read_byte() {
+    let mut memory = EmptyMemory::new(65536);
     
     memory.mem[0] = 0xF1;
     assert!(memory.read_byte(0) == 0xF1);
@@ -160,8 +199,8 @@ fn test_memory_read_byte() {
 }
 
 #[test]
-fn test_memory_read_word() {
-    let mut memory = Memory::new(65536);
+fn test_emptymemory_read_word() {
+    let mut memory = EmptyMemory::new(65536);
     
     memory.mem[0] = 0xF1;
     memory.mem[1] = 0xEA;
