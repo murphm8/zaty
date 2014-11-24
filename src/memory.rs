@@ -44,10 +44,19 @@ impl Memory for EmptyMemory {
     }
 }
 
+bitflags! {
+    flags RomRamMode: u8 {
+        const RomBankingMode       = 0b00000000,
+        const RamBankingMode       = 0b00000001,
+    }
+}
+
 pub struct GameboyMemory {
     rom: &'static [u8],
     mem: Vec<u8>,
-    rom_bank: uint
+    rom_bank: uint,
+    external_ram_enable: bool,
+    banking_mode: RomRamMode
 }
 
 impl Memory for GameboyMemory {
@@ -75,16 +84,28 @@ impl Memory for GameboyMemory {
 impl GameboyMemory {
     pub fn new(size: uint) -> GameboyMemory {
         let mut mem = Vec::from_elem(size, 0);
-        return GameboyMemory{ mem: mem, rom: include_bin!("test_instrs.gb"), rom_bank: 1 } 
+        return GameboyMemory{ mem: mem, rom: include_bin!("bin_tests/06-ld r,r.gb"), rom_bank: 1,
+        external_ram_enable: false, banking_mode: RomBankingMode } 
     }
 
     fn write_internal(&mut self, addr: uint, val: u8) {
         if addr >= 0x0100 && addr <= 0x014F {
             return;
         }
-        if addr >= 0x0150 && addr <= 0x7FFF {
-            self.rom_bank = val as uint;
+        if addr >= 0x2000 && addr <= 0x3FFF {
+            debug!("Select Bank {}", val);
+            self.rom_bank = (val & 0x1F) as uint;
             return;
+        }
+        if addr >= 0x4000 && addr <= 0x5FFF {
+           debug!("Set upper bank bits {}", val); 
+        }
+        if addr >= 0x6000 && addr <= 0x7FFF {
+            debug!("Switch Banking Mode {}", val);
+            match val {
+                0 => self.banking_mode = RomBankingMode,
+                _ => self.banking_mode = RamBankingMode
+            }
         }
         self.mem[addr] = val;
     }
@@ -94,8 +115,10 @@ impl GameboyMemory {
             if addr <= 0x3FFF {
                 return self.rom[addr];
             } else {
-                let real_addr = addr * self.rom_bank;
-                return self.rom[real_addr];
+                let real_addr = addr + (0x4000 * (self.rom_bank - 1)); // 0x4000 - 0x7FFF
+                let val = self.rom[real_addr];
+                debug!("rom bank access bank_no: {}, cartridge_addr: {:X}, val: {:X}", self.rom_bank, real_addr, val);
+                return val;
             }
         }
         return self.mem[addr];

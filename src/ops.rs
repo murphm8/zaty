@@ -74,11 +74,13 @@ pub fn ld_u16_immediate(mem: &Memory, pc: &mut Register<u16>,
 /// Writes the passed in value to memory at the address pointed to by combined address parameters
 pub fn write_value_to_memory_at_address(mem: &mut Memory, val: u8, addr_msb: u8, addr_lsb: u8) {
    let addr = pack_u16(addr_msb, addr_lsb);
+   debug!("write val to mem addr: {:X} val: {:X}", addr, val);
    mem.write_byte(addr as u16, val);
 }
 
 /// Increments the pair of registers as if they represent a 16-bit value
 pub fn increment_register_pair(msb: &mut Register<u8>,lsb: &mut Register<u8>) {
+    debug!("increment register pair");
     let incremented_val = ((msb.read() as uint) << 8) + lsb.read() as uint + 1;
     msb.write(high_byte(incremented_val as u16));
     lsb.write(low_byte(incremented_val as u16));
@@ -102,6 +104,7 @@ pub fn increment_register(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
     if reg.read() == 0 {
         flags.insert(ZeroFlag);
     }
+    debug!("increment reg new_val: {:X}", reg.read());
     freg.write(flags);
 }
 
@@ -167,7 +170,6 @@ pub fn write_u16_immediate_address(mem: &mut Memory, pc: &mut Register<u16>, val
 
 /// Performs no operation and consumes a cycle
 pub fn nop() {
-    debug!("nop");
 }
 
 /// Adds two sets of registers as 16 bit numbers with carries counted on bit 11 and 15
@@ -241,8 +243,10 @@ pub fn jump_by_signed_immediate(mem: &Memory, pc: &mut Register<u16>) {
     let mut new_pc = 0;
     if (offset & 0x80) == 0 {
         new_pc = current_pc + offset as u16;
+        debug!("jmp signed immediate new_pc: {:X}", new_pc);
     } else {
-        new_pc = current_pc - (offset & 0x7F) as u16;
+        new_pc = (current_pc as i16 + (offset as i8) as i16) as u16;
+        debug!("jmp signed immediate new_pc: {:X}", new_pc);
     }
     debug!("jmp {:X}", new_pc);
     pc.write(new_pc);
@@ -284,9 +288,9 @@ pub fn ld_from_address_pointed_to_by_register_pair_and_increment_register_pair(m
    let address = pack_u16(high_byte.read(), low_byte.read()); 
 
    let val = mem.read_byte(address);
-
    reg.write(val);
    increment_register_pair(high_byte, low_byte);
+   debug!("ld from address and inc reg pair - addr: {:X} val: {:X} reg_pair_val: {:X}", address, val, pack_u16(high_byte.read(), low_byte.read()));
 }
 
 pub fn complement(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
@@ -508,6 +512,7 @@ pub fn compare_value_at_address(mem: &Memory, reg: &mut Register<u8>, addr: u16,
 pub fn push(mem: &mut Memory, sp: &mut Register<u16>, val: u16) {
     sp.decrement();
     sp.decrement();
+    debug!("push sp:{:X} val:{:X}", sp.read(), val);
     mem.write_word(sp.read(), val);
 }
 
@@ -520,7 +525,7 @@ fn pop_internal(mem: &Memory, sp: &mut Register<u16>) -> u16 {
 
 pub fn pop(mem: &Memory, sp: &mut Register<u16>, hb: &mut Register<u8>, lb: &mut Register<u8>) {
     let val = pop_internal(mem, sp);
-
+    debug!("pop val: {:X}", val);
     hb.write(high_byte(val));
     lb.write(low_byte(val));
 }
@@ -815,6 +820,40 @@ pub fn write_val_FF00_plus_immediate(mem: &mut Memory, pc: &mut Register<u16>, v
     let addr = 0xFF00 + lb as u16;
     debug!("write val: {:X} to addr: {:X}", val, addr);
     mem.write_byte(addr, val); 
+}
+
+pub fn pop_flags(mem: &Memory, sp: &mut Register<u16>, a: &mut Register<u8>, f: &mut Register<Flags>) {
+    let val = pop_internal(mem, sp);
+    debug!("POP AF val: {:X}", val);
+    a.write(high_byte(val));
+    f.write(Flags::from_bits_truncate(low_byte(val)));
+}
+
+pub fn load_val_FF00_plus_immediate(mem: &Memory, pc: &mut Register<u16>, reg: &mut Register<u8>) {
+    let lb = u8_immediate(mem, pc);
+    let addr = 0xFF00 + lb as u16;
+    let val = mem.read_byte(addr); 
+    debug!("load val: {:X} into a", val);
+    reg.write(val);
+}
+
+#[test]
+fn test_load_val_FF00_plus_immediate() {
+}
+
+#[test]
+fn test_pop_flags() {
+    let mut a = Register::new(0x00);
+    let mut f = Register::new(HalfCarryFlag);
+    let mut mem = EmptyMemory::new(0xFFFF);
+    let mut sp = Register::new(0xFFFC);
+    mem.write_word(sp.read(), 0xBCDF);
+
+    pop_flags(&mem, &mut sp, &mut a, &mut f);
+
+    assert!(sp.read() == 0xFFFE);
+    assert!(a.read() == 0xBC);
+    assert!(f.read() == ZeroFlag | SubtractFlag | CarryFlag);
 }
 
 #[test]

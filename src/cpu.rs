@@ -19,13 +19,15 @@ impl<'a> Cpu<'a> {
         let serial_ready = flag_reg & 0x80 == 0x80;
         if serial_ready {
             let val = self.mem.read_byte(0xFF01);
-            print!("serial: {} ", val as char);
+            print!("{}", val as char);
+            self.mem.write_byte(0xFF02, 0x00);
         }
     }
    
     /// Execute a cycle on the cpu
     pub fn tick(&mut self) {
         self.check_serial();
+        debug!("fetch pc: {:X}", self.reg.pc.read());
         let instr = self.fetch_instruction(); 
 
         let a = self.reg.a.read();
@@ -35,14 +37,14 @@ impl<'a> Cpu<'a> {
         let e = self.reg.e.read();
         let h = self.reg.h.read();
         let l = self.reg.l.read();
-        let f = self.reg.f.read();
+        let f = self.reg.f.read().bits();
         let sp = self.reg.sp.read();
 
         let zero = self.reg.f.read().contains(ZeroFlag);
         let not_zero = !zero;
         let carry = self.reg.f.read().contains(CarryFlag);
         let no_carry = !carry;
-        println!("opcode {:X} ", instr);
+        debug!("opcode {:X} ", instr);
         match instr {
             0x00 => ops::nop(), // NOP
             0x01 => ops::ld_u16_immediate(&mut *self.mem, &mut self.reg.pc, &mut self.reg.b, &mut self.reg.c), // LD BC, nn
@@ -164,7 +166,7 @@ impl<'a> Cpu<'a> {
             0x73 => ops::write_value_to_memory_at_address(&mut *self.mem, e, h, l), // LD (HL), E
             0x74 => ops::write_value_to_memory_at_address(&mut *self.mem, h, h, l), // LD (HL), H
             0x75 => ops::write_value_to_memory_at_address(&mut *self.mem, l, h, l), // LD (HL), L
-            0x76 => error!("HALT instruction not implemented"),
+            0x76 => panic!(),
             0x77 => ops::write_value_to_memory_at_address(&mut *self.mem, a, h, l), // LD (HL), A
             0x78 => ops::ld_u8(&mut self.reg.a, b), // LD A, B
             0x79 => ops::ld_u8(&mut self.reg.a, c), // LD A, C
@@ -287,12 +289,12 @@ impl<'a> Cpu<'a> {
             0xEE => ops::xor(&mut self.reg.a, ops::u8_immediate(&mut *self.mem, &mut self.reg.pc), &mut self.reg.f), // XOR n
             0xEF => ops::call(&mut *self.mem, &mut self.reg.pc, &mut self.reg.sp, 0x28), // RST 28
 
-            0xF0 => error!("Not Implemented"),
-            0xF1 => error!("Not Implemented"),
+            0xF0 => ops::load_val_FF00_plus_immediate(&*self.mem, &mut self.reg.pc, &mut self.reg.a),
+            0xF1 => ops::pop_flags(&mut *self.mem, &mut self.reg.sp, &mut self.reg.a, &mut self.reg.f), // POP AF
             0xF2 => error!("Not Implemented"),
             0xF3 => ops::disable_interrupts(&mut self.reg.ime),
             0xF4 => error!("Not Implemented"),
-            0xF5 => error!("Not Implemented"),
+            0xF5 => ops::push(&mut *self.mem, &mut self.reg.sp, pack_u16(a, f)), // PUSH AF 
             0xF6 => error!("Not Implemented"),
             0xF7 => error!("Not Implemented"),
             0xF8 => error!("Not Implemented"),
@@ -301,7 +303,7 @@ impl<'a> Cpu<'a> {
             0xFB => error!("Not Implemented"),
             0xFC => error!("Not Implemented"),
             0xFD => error!("Not Implemented"),
-            0xFE => error!("Not Implemented"),
+            0xFE => ops::compare(&mut self.reg.a, ops::u8_immediate(&*self.mem, &mut self.reg.pc), &mut self.reg.f), // CP A, n 
             0xFF => error!("Not Implemented"),
 
             _ => return

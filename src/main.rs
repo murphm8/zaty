@@ -19,9 +19,11 @@ fn main() {
     let mut count: uint = 0;
     let mut handle = stdin();
     loop {
+        /* 
         if count % 10 == 0 {
             let val = handle.read_char();
         }
+       */
         let clock_cycle = cpu.tick();
         count += 1;
     }
