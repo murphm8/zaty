@@ -1,4 +1,5 @@
 #![feature(tuple_indexing)]
+#![feature(macro_rules)]
 #![feature(phase)]
 #[phase(plugin, link)] extern crate log;
 
@@ -19,6 +20,7 @@ fn main() {
     let mut count: uint = 0;
     let mut handle = stdin();
     loop {
+        debug!("cycle: {}", count);
         /* 
         if count % 10 == 0 {
             let val = handle.read_char();

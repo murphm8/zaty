@@ -198,8 +198,7 @@ pub fn add_register_pair_to_register_pair(rega: &mut Register<u8>, regb: &mut Re
     freg.write(flags);
 }
 
-pub fn ld_from_reg_pair_as_address(mem: &Memory, reg: &mut Register<u8>, reg1: u8, reg2: u8) {
-    let addr = pack_u16(reg1, reg2);
+pub fn ld_from_address(mem: &Memory, reg: &mut Register<u8>, addr: u16) {
     let val = mem.read_byte(addr);
     reg.write(val);
 }
@@ -2063,15 +2062,15 @@ fn test_relative_jmp_by_signed_immediate_if_flag() {
 
     // Backwards
     freg.write(ZeroFlag);
-    mem.write_byte(0x128A, 0x81);
+    mem.write_byte(0x128A, -10 as u8);
     relative_jmp_by_signed_immediate_if_flag(&mem, &mut pc, &freg, ZeroFlag);
-    assert!(pc.read() == 0x128A, "Should jump back"); 
+    assert!(pc.read() == 0x1281, "Should jump back"); 
     
     // No jump because ZeroFlag is not set
     freg.write(Flags::empty());
-    mem.write_byte(0x1288, 0xFF);
+    mem.write_byte(0x1281, 0xFF);
     relative_jmp_by_signed_immediate_if_flag(&mem, &mut pc, &freg, ZeroFlag);
-    assert!(pc.read() == 0x128B, "Should not jump if ZeroFlag is not set. PC should increment to go past immediate value");
+    assert!(pc.read() == 0x1282, "Should not jump if ZeroFlag is not set. PC should increment to go past immediate value");
 
 }
 
@@ -2122,7 +2121,7 @@ fn test_jump_by_signed_immediate() {
     let mut mem = EmptyMemory::new(0x10000);
     let mut pc = Register::new(0x0101);
     // 0x8A = -10 as i8
-    mem.write_byte(0x0101, 0x8A);
+    mem.write_byte(0x0101, -10 as u8);
 
     jump_by_signed_immediate(&mem, &mut pc);
 
@@ -2179,7 +2178,7 @@ fn test_ld_from_reg_pair_as_address() {
 
     mem.write_byte(0x1234, 0xAA);
 
-    ld_from_reg_pair_as_address(&mem, &mut rega, reg1.read(), reg2.read());
+    ld_from_address(&mem, &mut rega, pack_u16(reg1.read(), reg2.read()));
 
     assert!(rega.read() == 0xAA);
 }
