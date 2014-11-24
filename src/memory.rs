@@ -4,32 +4,63 @@ use std::iter::range_inclusive;
 use std::iter::range_step_inclusive;
 use std::path::Path;
 
+
 pub struct Memory {
-    mem: Vec<u8> 
+    rom: &'static [u8],
+    mem: Vec<u8>,
+    rom_bank: uint
 }
 
 impl Memory {
     pub fn new(size: uint) -> Memory {
-        return Memory{ mem: Vec::from_elem(size, 0)} 
+        let mut mem = Vec::from_elem(size, 0);
+        return Memory{ mem: mem, rom: include_bin!("test_instrs.gb"), rom_bank: 1 } 
     }
 
     pub fn read_byte(&self, addr: u16) -> u8 {
-        return self.mem[addr as uint];
+        return self.read_internal(addr as uint);
     }
 
     pub fn read_word(&self, addr: u16) -> u16 {
-        let high_byte = self.mem[(addr + 1) as uint];
-        let low_byte = self.mem[addr as uint];
+        let high_byte = self.read_internal((addr + 1) as uint);
+        let low_byte = self.read_internal(addr as uint);
         return ((high_byte as u16) << 8) + (low_byte as u16);
     }
 
     pub fn write_byte(&mut self, addr: u16, data: u8) {
-        self.mem[addr as uint] = data;
+        self.write_internal(addr as uint, data);
     }
 
     pub fn write_word(&mut self, addr: u16, data: u16) {
-        self.mem[addr as uint] = low_byte(data);
-        self.mem[(addr + 1) as uint] = high_byte(data);
+        self.write_internal(addr as uint, low_byte(data));
+        self.write_internal((addr as uint) + 1, high_byte(data));
+    }
+
+    fn write_internal(&mut self, addr: uint, val: u8) {
+        /*
+        if addr >= 0x0100 && addr <= 0x014F {
+            return;
+        }
+        if addr >= 0x0150 && addr <= 0x7FFF {
+            self.rom_bank = val as uint;
+            return;
+        }
+        */
+        self.mem[addr] = val;
+    }
+
+    fn read_internal(&self, addr: uint) -> u8 {
+        /*
+        if addr >= 0x0100 && addr <= 0x7FFF {
+            if addr <= 0x3FFF {
+                return self.rom[addr];
+            } else {
+                let real_addr = addr * self.rom_bank;
+                return self.rom[real_addr];
+            }
+        }
+        */
+        return self.mem[addr];
     }
 }
 

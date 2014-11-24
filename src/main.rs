@@ -11,10 +11,10 @@ mod extensions;
 mod cpu;
 
 fn main() {
-    let mut memory = Memory::new(65536);
+    let mut memory = Memory::new(0xFFFF + 1);
     let mut cpu = Cpu::new(&mut memory);
 
-    loop {
+    for n in range(0 as int,10) {
         let clock_cycle = cpu.tick();
     }
    

@@ -301,7 +301,7 @@ pub fn complement(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
 /// Loads the next two bytes into the passed in register (sp)
 pub fn ld_next_two_bytes_into_reg(mem: &Memory, pc: &mut Register<u16>, reg: &mut Register<u16>) {
     let val = u16_immediate(mem, pc);
-    debug!("ld_next_two_bytes_into_reg: {}", val);
+    debug!("ld_next_two_bytes_into_reg: {:X}", val);
     reg.write(val);
 }
 
@@ -401,7 +401,7 @@ pub fn internal_sub(reg: &mut Register<u8>, val: u8, freg: &mut Register<Flags>,
     if result == 0 && flags.contains(CarryFlag) {
         flags.insert(ZeroFlag);
     }
-    println!("{}", result);
+    debug!("internal sub result {:X}", result);
     reg.write(result);
     freg.write(flags);
 }
@@ -532,6 +532,7 @@ pub fn ret(mem: &Memory, pc: &mut Register<u16>, sp: &mut Register<u16>, should_
 
 pub fn jp_u16_immediate(mem: &Memory, pc: &mut Register<u16>) {
     let addr = u16_immediate(mem, pc); 
+    debug!("jmp {:X}", addr);
     pc.write(addr);
 }
 
@@ -567,6 +568,7 @@ pub fn call(mem: &mut Memory, pc: &mut Register<u16>, sp: &mut Register<u16>, ad
 
 pub fn sub_u8_immediate(mem: &Memory, pc: &mut Register<u16>, reg: &mut Register<u8>, freg: &mut Register<Flags>, with_carry: bool) {
     let val = u8_immediate(mem, pc);
+    debug!("sub u8 immediate {:X}", val);
     internal_sub(reg, val, freg, with_carry);
 }
 
@@ -791,6 +793,39 @@ pub fn srl(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
 pub fn srl_at_address(mem: &mut Memory, addr: u16, freg: &mut Register<Flags>) {
     let val = internal_sra(mem.read_byte(addr), freg);
     mem.write_byte(addr, val);
+}
+
+pub fn disable_interrupts(ime: &mut bool) {
+    debug!("disable interrupts");
+    *ime = false;
+}
+
+pub fn write_value_to_u16_immediate(mem: &mut Memory, pc: &mut Register<u16>, val: u8) {
+    let addr = u16_immediate(mem, pc);
+    mem.write_byte(addr, val);
+}
+
+#[test]
+fn test_write_value_to_u16_immediate() {
+    let mut mem = Memory::new(0xFFFF);
+    let addr = 0x8284;
+    let val = 0x92;
+    let mut pc = Register::new(0x1234);
+
+    mem.write_word(0x1234, addr);
+
+    write_value_to_u16_immediate(&mut mem, &mut pc, val);
+    assert!(pc.read() == 0x1236);
+    assert!(mem.read_byte(addr) == val);
+}
+
+#[test]
+fn test_disable_interrupts() {
+    let mut a = true;
+    
+    disable_interrupts(&mut a);
+
+    assert!(a == false);
 }
 
 #[test]

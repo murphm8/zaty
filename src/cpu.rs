@@ -13,9 +13,19 @@ impl<'a> Cpu<'a> {
     pub fn new(memory: &'a mut Memory) -> Cpu<'a> {
         return Cpu{reg: Registers::new(), mem: memory}
     }
+
+    fn check_serial(&mut self) {
+        let flag_reg = self.mem.read_byte(0xFF02);
+        let serial_ready = flag_reg & 0x80 == 0x80;
+        if serial_ready {
+            let val = self.mem.read_byte(0xFF01);
+            print!("serial: {} ", val as char);
+        }
+    }
    
     /// Execute a cycle on the cpu
     pub fn tick(&mut self) {
+        self.check_serial();
         let instr = self.fetch_instruction(); 
 
         let a = self.reg.a.read();
@@ -32,7 +42,7 @@ impl<'a> Cpu<'a> {
         let not_zero = !zero;
         let carry = self.reg.f.read().contains(CarryFlag);
         let no_carry = !carry;
-
+        println!("opcode {:X} ", instr);
         match instr {
             0x00 => ops::nop(), // NOP
             0x01 => ops::ld_u16_immediate(self.mem, &mut self.reg.pc, &mut self.reg.b, &mut self.reg.c), // LD BC, nn
@@ -260,22 +270,40 @@ impl<'a> Cpu<'a> {
             0xDD => error!("0xDD should never be executed"), 
             0xDE => ops::sub_u8_immediate(self.mem, &mut self.reg.pc, &mut self.reg.a, &mut self.reg.f, true), // SBC A, n
             0xDF => ops::call(self.mem, &mut self.reg.pc, &mut self.reg.sp, 0x18), // RST 18
-            0xE0 => return, // LDH (n), A
+            0xE0 => error!("Not Implemented"), // LDH (n), A
             0xE1 => ops::pop(self.mem, &mut self.reg.sp, &mut self.reg.h, &mut self.reg.l), // POP HL 
-            0xE2 => return, // LDH (C), A
+            0xE2 => error!("Not Implemented"), // LDH (C), A
             0xE3 => error!("0xE3 should never be executed"), 
             0xE4 => error!("0xE4 should never be executed"), 
             0xE5 => ops::push(self.mem, &mut self.reg.sp, pack_u16(h, l)), // PUSH HL 
             0xE6 => ops::and(&mut self.reg.a, ops::u8_immediate(self.mem, &mut self.reg.pc), &mut self.reg.f), // AND A, n
             0xE7 => ops::call(self.mem, &mut self.reg.pc, &mut self.reg.sp, 0x20), // RST 20
-            0xE8 => return, // ADD SP, (signed)n
+            0xE8 => error!("Not Implemented"), // ADD SP, (signed)n
             0xE9 => ops::jp(&mut self.reg.pc, pack_u16(h,l)), // JP (HL)
-            0xEA => return, // LD (nn), A 
+            0xEA => ops::write_value_to_u16_immediate(self.mem, &mut self.reg.pc, a), // LD (nn), A 
             0xEB => error!("0xEB should never be executed"),
             0xEC => error!("0xEC should never be executed"),
             0xED => error!("0xED should never be executed"), 
             0xEE => ops::xor(&mut self.reg.a, ops::u8_immediate(self.mem, &mut self.reg.pc), &mut self.reg.f), // XOR n
             0xEF => ops::call(self.mem, &mut self.reg.pc, &mut self.reg.sp, 0x28), // RST 28
+
+            0xF0 => error!("Not Implemented"),
+            0xF1 => error!("Not Implemented"),
+            0xF2 => error!("Not Implemented"),
+            0xF3 => ops::disable_interrupts(&mut self.reg.ime),
+            0xF4 => error!("Not Implemented"),
+            0xF5 => error!("Not Implemented"),
+            0xF6 => error!("Not Implemented"),
+            0xF7 => error!("Not Implemented"),
+            0xF8 => error!("Not Implemented"),
+            0xF9 => error!("Not Implemented"),
+            0xFA => error!("Not Implemented"),
+            0xFB => error!("Not Implemented"),
+            0xFC => error!("Not Implemented"),
+            0xFD => error!("Not Implemented"),
+            0xFE => error!("Not Implemented"),
+            0xFF => error!("Not Implemented"),
+
             _ => return
         }
     }
@@ -573,7 +601,6 @@ impl<'a> Cpu<'a> {
             0xFD => ops::set(&mut self.reg.l, 7), // SET 7, L
             0xFE => ops::set_at_addr(self.mem, pack_u16(h,l), 7), // SET 7, (HL)
             0xFF => ops::set(&mut self.reg.a, 7), // SET 7, A
-            
             _ => return
         }
     }
