@@ -749,6 +749,83 @@ pub fn sra_at_address(mem: &mut Memory, addr: u16, freg: &mut Register<Flags>) {
     mem.write_byte(addr, val);
 }
 
+fn internal_swap(val: u8, freg: &mut Register<Flags>) -> u8 {
+    freg.write(Flags::empty());
+
+    if val == 0 {
+        freg.write(ZeroFlag);
+    }
+
+    return (low_nibble(val) << 4) + high_nibble(val);
+}
+
+pub fn swap(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
+    let val = internal_swap(reg.read(), freg);
+    reg.write(val);
+}
+
+pub fn swap_at_address(mem: &mut Memory, addr: u16, freg: &mut Register<Flags>) {
+    let val = internal_swap(mem.read_byte(addr), freg);
+    mem.write_byte(addr, val);
+}
+
+fn internal_srl(val: u8, freg: &mut Register<Flags>) -> u8 {
+    freg.write(Flags::empty());
+
+    if val == 0 {
+        freg.write(ZeroFlag);
+    }
+
+    if val & 0x01 == 1 {
+        freg.write(CarryFlag);
+    }
+
+    return val >> 1;
+}
+
+pub fn srl(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
+    let val = internal_sra(reg.read(), freg);
+    reg.write(val);
+}
+
+pub fn srl_at_address(mem: &mut Memory, addr: u16, freg: &mut Register<Flags>) {
+    let val = internal_sra(mem.read_byte(addr), freg);
+    mem.write_byte(addr, val);
+}
+
+#[test]
+fn test_srl_at_address() {
+}
+
+#[test]
+fn test_srl() {
+}
+
+#[test]
+fn test_swap_at_address() {
+    let mut mem = Memory::new(0xFFFF);
+    let addr = 0x2321;
+    let mut freg = Register::new(Flags::empty());
+    mem.write_byte(addr, 0xCB);
+    swap_at_address(&mut mem, addr, &mut freg);
+    assert!(mem.read_byte(addr) == 0xBC);
+}
+
+#[test]
+fn test_swap() {
+    let mut reg = Register::new(0x00);
+    let mut freg = Register::new(Flags::empty());
+
+    swap(&mut reg, &mut freg);
+    assert!(reg.read() == 0x00);
+    assert!(freg.read() == ZeroFlag);
+
+    reg.write(0xAC);
+    swap(&mut reg, &mut freg);
+    assert!(reg.read() == 0xCA);
+    assert!(freg.read() == Flags::empty());
+}
+
 #[test]
 fn test_sra_at_address() {
     let mut val = 0b10010001;
