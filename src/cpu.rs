@@ -270,7 +270,7 @@ impl<'a> Cpu<'a> {
             0xDD => error!("0xDD should never be executed"), 
             0xDE => ops::sub_u8_immediate(&mut *self.mem, &mut self.reg.pc, &mut self.reg.a, &mut self.reg.f, true), // SBC A, n
             0xDF => ops::call(&mut *self.mem, &mut self.reg.pc, &mut self.reg.sp, 0x18), // RST 18
-            0xE0 => error!("Not Implemented"), // LDH (n), A
+            0xE0 => ops::write_val_FF00_plus_immediate(&mut *self.mem, &mut self.reg.pc, a), // LDH (n), A
             0xE1 => ops::pop(&mut *self.mem, &mut self.reg.sp, &mut self.reg.h, &mut self.reg.l), // POP HL 
             0xE2 => error!("Not Implemented"), // LDH (C), A
             0xE3 => error!("0xE3 should never be executed"), 

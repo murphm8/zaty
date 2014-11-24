@@ -50,7 +50,7 @@ pub fn add(first: &mut Register<u8>, second: u8, freg: &mut Register<Flags>) {
 
 /// Load the value from one register into another
 pub fn ld_reg_to_reg(target: &mut Register<u8>, source: &Register<u8>) {
-    debug!("ld_reg_to_reg: {}", source.read());
+    debug!("ld_reg_to_reg: {:X}", source.read());
     let val = source.read();
     target.write(val);
 }
@@ -58,7 +58,7 @@ pub fn ld_reg_to_reg(target: &mut Register<u8>, source: &Register<u8>) {
 /// Loads the memory pointed to by the next two bytes into a register
 pub fn ld_u8_immediate(mem: &Memory, pc: &mut Register<u16>, reg: &mut Register<u8>) {
     let val = u8_immediate(mem, pc); 
-    debug!("ld_next_byte_to_reg: {} {}", pc.read(), val);
+    debug!("ld_next_byte_to_reg: {:X}", val);
     reg.write(val);
 }
 
@@ -66,7 +66,7 @@ pub fn ld_u8_immediate(mem: &Memory, pc: &mut Register<u16>, reg: &mut Register<
 pub fn ld_u16_immediate(mem: &Memory, pc: &mut Register<u16>, 
                                  hb: &mut Register<u8>, lb: &mut Register<u8>) {
     let val = u16_immediate(mem, pc); 
-    debug!("ld_next_two_bytes_into_reg_pair: {}", val);
+    debug!("ld_next_two_bytes_into_reg_pair: {:X}", val);
     hb.write(high_byte(val));
     lb.write(low_byte(val));
 }
@@ -244,6 +244,7 @@ pub fn jump_by_signed_immediate(mem: &Memory, pc: &mut Register<u16>) {
     } else {
         new_pc = current_pc - (offset & 0x7F) as u16;
     }
+    debug!("jmp {:X}", new_pc);
     pc.write(new_pc);
 }
 
@@ -349,6 +350,7 @@ pub fn reset_flag(freg: &mut Register<Flags>, flag: Flags) {
 }
 
 pub fn ld_u8(reg: &mut Register<u8>, val: u8) {
+    debug!("load val: {:X} into register", val);
     reg.write(val);
 }
 
@@ -526,6 +528,7 @@ pub fn pop(mem: &Memory, sp: &mut Register<u16>, hb: &mut Register<u8>, lb: &mut
 pub fn ret(mem: &Memory, pc: &mut Register<u16>, sp: &mut Register<u16>, should_execute: bool) {
     if should_execute {
         let addr = pop_internal(mem, sp); 
+        debug!("ret to {:X}", addr);
         pc.write(addr);
     }
 }
@@ -549,6 +552,7 @@ pub fn call_immediate_if_true(mem: &mut Memory, pc: &mut Register<u16>, sp: &mut
     if should_jump {
         let new_addr = u16_immediate(mem, pc); 
         push(mem, sp, pc.read());
+        debug!("call immediate {:X}", new_addr);
         pc.write(new_addr);
     } else {
         pc.increment();
@@ -804,6 +808,17 @@ pub fn write_value_to_u16_immediate(mem: &mut Memory, pc: &mut Register<u16>, va
     let addr = u16_immediate(mem, pc);
     debug!("write value to u16 immediate val: {:X} addr: {:X}", val, addr);
     mem.write_byte(addr, val);
+}
+
+pub fn write_val_FF00_plus_immediate(mem: &mut Memory, pc: &mut Register<u16>, val: u8) {
+    let lb = u8_immediate(mem, pc);
+    let addr = 0xFF00 + lb as u16;
+    debug!("write val: {:X} to addr: {:X}", val, addr);
+    mem.write_byte(addr, val); 
+}
+
+#[test]
+fn test_write_val_FF00_plus_immediate() {
 }
 
 #[test]
