@@ -700,12 +700,6 @@ pub fn rotate_right_at_address(mem: &mut Memory, addr: u16, freg: &mut Register<
     mem.write_byte(addr, val);
 }
 
-pub fn sra(reg: &mut Register<u8>, freg: &Register<Flags>) {
-}
-
-pub fn sra_at_address(mem: &mut Memory, addr: u16, freg: &mut Register<Flags>) {
-}
-
 fn internal_sla(val: u8, freg: &mut Register<Flags>) -> u8 {
     freg.write(Flags::empty());
     if val == 0 {
@@ -728,6 +722,88 @@ pub fn sla(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
 pub fn sla_at_address(mem: &mut Memory, addr: u16, freg: &mut Register<Flags>) {
     let val = internal_sla(mem.read_byte(addr), freg);
     mem.write_byte(addr, val);
+}
+
+fn internal_sra(val: u8, freg: &mut Register<Flags>) -> u8 {
+    freg.write(Flags::empty());
+    if val == 0 {
+        freg.write(ZeroFlag);
+        return 0;
+    }
+
+    if val & 0x01 == 1 {
+        freg.write(CarryFlag);
+    }
+
+    let bit_7 = val & 0x80;
+    return (val >> 1) | bit_7;
+}
+
+pub fn sra(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
+    let val = internal_sra(reg.read(), freg);
+    reg.write(val);
+}
+
+pub fn sra_at_address(mem: &mut Memory, addr: u16, freg: &mut Register<Flags>) {
+    let val = internal_sra(mem.read_byte(addr), freg);
+    mem.write_byte(addr, val);
+}
+
+#[test]
+fn test_sra_at_address() {
+    let mut val = 0b10010001;
+    let mut freg = Register::new(Flags::empty());
+    let mut mem = Memory::new(0xFFFF);
+    let addr = 0x2372;
+
+    mem.write_byte(addr, val);
+    sra_at_address(&mut mem, addr, &mut freg);
+
+    assert!(mem.read_byte(addr) == 0b11001000);
+    assert!(freg.read() == CarryFlag);
+    
+    sra_at_address(&mut mem, addr, &mut freg);
+
+    assert!(mem.read_byte(addr) == 0b11100100);
+    assert!(freg.read() == Flags::empty());
+
+    mem.write_byte(addr, 0x00);
+    sra_at_address(&mut mem, addr, &mut freg);
+    assert!(mem.read_byte(addr) == 0x00);
+    assert!(freg.read() == ZeroFlag);
+
+    mem.write_byte(addr, 0b00001111);
+    sra_at_address(&mut mem, addr, &mut freg);
+    assert!(mem.read_byte(addr) == 0b00000111);
+    assert!(freg.read() == CarryFlag);
+
+}
+
+#[test]
+fn test_sra() {
+    let mut reg = Register::new(0b10010001);
+    let mut freg = Register::new(Flags::empty());
+
+    sra(&mut reg, &mut freg);
+
+    assert!(reg.read() == 0b11001000);
+    assert!(freg.read() == CarryFlag);
+    
+    sra(&mut reg, &mut freg);
+
+    assert!(reg.read() == 0b11100100);
+    assert!(freg.read() == Flags::empty());
+
+    reg.write(0x00);
+    sra(&mut reg, &mut freg);
+    assert!(reg.read() == 0x00);
+    assert!(freg.read() == ZeroFlag);
+
+    reg.write(0b00001111);
+    sra(&mut reg, &mut freg);
+    assert!(reg.read() == 0b00000111);
+    assert!(freg.read() == CarryFlag);
+
 }
 
 #[test]
