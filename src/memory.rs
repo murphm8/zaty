@@ -99,6 +99,7 @@ impl GameboyMemory {
         }
         if addr >= 0x4000 && addr <= 0x5FFF {
            debug!("Set upper bank bits {}", val); 
+           return;
         }
         if addr >= 0x6000 && addr <= 0x7FFF {
             debug!("Switch Banking Mode {}", val);
@@ -106,6 +107,7 @@ impl GameboyMemory {
                 0 => self.banking_mode = RomBankingMode,
                 _ => self.banking_mode = RamBankingMode
             }
+            return;
         }
         self.mem[addr] = val;
     }

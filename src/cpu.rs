@@ -35,6 +35,7 @@ impl<'a> Cpu<'a> {
         if serial_ready {
             let val = self.mem.read_byte(0xFF01);
             print!("{}", val as char);
+            debug!("serial: {}", val as char);
             self.mem.write_byte(0xFF02, 0x00);
         }
     }
@@ -89,7 +90,8 @@ impl<'a> Cpu<'a> {
             0x1A => opcode!(ops::ld_from_address(&mut *self.mem, &mut self.reg.a, pack_u16(d, e)), "LD A, (DE)", self),
             0x1B => opcode!(ops::decrement_register_pair(&mut self.reg.d, &mut self.reg.e), "DEC DE", self),
             0x1C => opcode!(ops::increment_register(&mut self.reg.e, &mut self.reg.f), "INC E", self),
-            0x1E => opcode!(ops::decrement_register(&mut self.reg.e, &mut self.reg.f), "DEC E", self),
+            0x1D => opcode!(ops::decrement_register(&mut self.reg.e, &mut self.reg.f), "DEC E", self),
+            0x1E => opcode!(ops::ld_u8(&mut self.reg.e, ops::u8_immediate(&mut *self.mem, &mut self.reg.pc)), "LD E, n", self),
             0x1F => opcode!(ops::rotate_right_with_carry(&mut self.reg.a, &mut self.reg.f), "RR A", self),
 
             0x20 => opcode!(ops::relative_jmp_by_signed_immediate_if_not_flag(&mut *self.mem, &mut self.reg.pc, &self.reg.f, ZeroFlag), "JR NZ, n", self),
@@ -319,7 +321,7 @@ impl<'a> Cpu<'a> {
             0xFE => opcode!(ops::compare(&mut self.reg.a, ops::u8_immediate(&*self.mem, &mut self.reg.pc), &mut self.reg.f), "CP A, n ", self),
             0xFF => error!("Not Implemented"),
 
-            _ => return
+            _ => panic!("Missing opcode!!!! {:X}", instr) 
         }
     }
    
@@ -616,7 +618,7 @@ impl<'a> Cpu<'a> {
             0xFD => opcode!(ops::set(&mut self.reg.l, 7), "SET 7, L", self),
             0xFE => opcode!(ops::set_at_addr(&mut *self.mem, pack_u16(h,l), 7), "SET 7, (HL)", self),
             0xFF => opcode!(ops::set(&mut self.reg.a, 7), "SET 7, A", self),
-            _ => return
+            _ => panic!("Missing opcode!!!! {:X}", instr) 
         }
     }
 }
