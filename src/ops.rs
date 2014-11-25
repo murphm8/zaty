@@ -397,7 +397,7 @@ pub fn internal_sub(reg: &mut Register<u8>, val: u8, freg: &mut Register<Flags>,
 
     let result = reg_val - val - carry;
     
-    if result == 0 && flags.contains(CarryFlag) {
+    if result == 0 {
         flags.insert(ZeroFlag);
     }
     debug!("internal sub result {:X}", result);
@@ -486,7 +486,7 @@ pub fn compare(reg: &mut Register<u8>, val: u8, freg: &mut Register<Flags>) {
         flags.insert(CarryFlag);
     }
 
-    if (reg_val == val) && flags.contains(CarryFlag) {
+    if (reg_val == val) {
         flags.insert(ZeroFlag);
     }
     freg.write(flags);
@@ -537,7 +537,7 @@ pub fn jp_u16_immediate(mem: &Memory, pc: &mut Register<u16>) {
     pc.write(addr);
 }
 
-pub fn jp_u16_immediate_if_true(mem: &Memory,pc: &mut Register<u16>,should_jump: bool) {
+pub fn jp_u16_immediate_if_true(mem: &Memory,pc: &mut Register<u16>, should_jump: bool) {
     if should_jump {
         jp_u16_immediate(mem, pc);
     } else {
@@ -549,9 +549,7 @@ pub fn jp_u16_immediate_if_true(mem: &Memory,pc: &mut Register<u16>,should_jump:
 pub fn call_immediate_if_true(mem: &mut Memory, pc: &mut Register<u16>, sp: &mut Register<u16>, should_jump: bool) {
     if should_jump {
         let new_addr = u16_immediate(mem, pc); 
-        push(mem, sp, pc.read());
-        debug!("call immediate {:X}", new_addr);
-        pc.write(new_addr);
+        call(mem, pc, sp, new_addr);    
     } else {
         pc.increment();
         pc.increment();
@@ -570,7 +568,6 @@ pub fn call(mem: &mut Memory, pc: &mut Register<u16>, sp: &mut Register<u16>, ad
 
 pub fn sub_u8_immediate(mem: &Memory, pc: &mut Register<u16>, reg: &mut Register<u8>, freg: &mut Register<Flags>, with_carry: bool) {
     let val = u8_immediate(mem, pc);
-    debug!("sub u8 immediate {:X}", val);
     internal_sub(reg, val, freg, with_carry);
 }
 
