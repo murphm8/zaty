@@ -126,7 +126,7 @@ impl<'a> Cpu<'a> {
             0x3C => opcode!(ops::increment_register(&mut self.reg.a, &mut self.reg.f), "INC A", self),
             0x3D => opcode!(ops::decrement_register(&mut self.reg.a, &mut self.reg.f), "DEC A", self),
             0x3E => opcode!(ops::ld_u8(&mut self.reg.a, ops::u8_immediate(&mut *self.mem, &mut self.reg.pc)), "LD A, d8", self),
-            0x3F => opcode!(ops::reset_flag(&mut self.reg.f, CarryFlag), "CCF", self),
+            0x3F => opcode!(ops::ccf(&mut self.reg.f), "CCF", self),
             0x40 => opcode!(ops::ld_u8(&mut self.reg.b, b), "LD B, B", self),
             0x41 => opcode!(ops::ld_u8(&mut self.reg.b, c), "LD B, C", self),
             0x42 => opcode!(ops::ld_u8(&mut self.reg.b, d), "LD B, D", self),
