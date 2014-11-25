@@ -35,7 +35,7 @@ fn add_internal(first: &mut Register<u8>, second: u8, freg: &mut Register<Flags>
         flags = flags | CarryFlag;
     }
 
-    if result == 0 && flags == Flags::empty() {
+    if result == 0 {
         flags = ZeroFlag;
     }
 
@@ -1481,6 +1481,12 @@ fn test_add_u8_immediate() {
     assert!(pc.read() == 0x2739);
     assert!(reg.read() == 0x32);
     assert!(freg.read() == HalfCarryFlag);
+
+    mem.write_byte(pc.read(), 0x01);
+    reg.write(0xFF);
+    add_u8_immediate(&mem, &mut pc, &mut reg, &mut freg, false);
+    assert!(reg.read() == 0x00);
+    assert!(freg.read() == ZeroFlag);
 
 }
 
