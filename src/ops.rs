@@ -251,14 +251,6 @@ pub fn jump_by_signed_immediate(mem: &Memory, pc: &mut Register<u16>) {
     pc.write(new_pc);
 }
 
-pub fn relative_jmp_by_signed_immediate_if_not_flag(mem: &Memory, pc: &mut Register<u16>, freg: &Register<Flags>, flag: Flags) {
-    if !freg.read().contains(flag) {
-        jump_by_signed_immediate(mem, pc);
-    } else {
-        pc.increment();
-    }
-}
-
 pub fn write_value_to_memory_at_address_and_increment_register(mem: &mut Memory, val: u8, high_reg: &mut Register<u8>, low_reg: &mut Register<u8>) {
     let address = pack_u16(high_reg.read(), low_reg.read());
     mem.write_byte(address, val);
@@ -275,8 +267,8 @@ pub fn write_value_to_memory_at_address_and_decrement_register(mem: &mut Memory,
     low_reg.write(low_byte(new_address));
 }
 
-pub fn relative_jmp_by_signed_immediate_if_flag(mem: &Memory, pc: &mut Register<u16>, freg: &Register<Flags>, flag: Flags) {
-    if freg.read().contains(flag) {
+pub fn relative_jmp_by_signed_immediate_if_true(mem: &Memory, pc: &mut Register<u16>, should_jump: bool) {
+    if should_jump {
         jump_by_signed_immediate(mem, pc);
     } else {
         pc.increment();
@@ -2049,27 +2041,23 @@ fn test_ld_from_address_pointed_to_by_register_pair_and_increment_register_pair(
 }
 
 #[test]
-fn test_relative_jmp_by_signed_immediate_if_flag() {
+fn test_relative_jmp_by_signed_immediate_if_true() {
     let mut mem = EmptyMemory::new(0xFFFF);
     let mut pc = Register::new(0x1234);
-    let mut freg = Register::new(Flags::empty());
 
     // Forwards
-    freg.write(ZeroFlag);
     mem.write_byte(0x1234, 0x55);
-    relative_jmp_by_signed_immediate_if_flag(&mem, &mut pc, &freg, ZeroFlag);
+    relative_jmp_by_signed_immediate_if_true(&mem, &mut pc, true);
     assert!(pc.read() == 0x128A, "Should jump forwards");
 
     // Backwards
-    freg.write(ZeroFlag);
     mem.write_byte(0x128A, -10 as u8);
-    relative_jmp_by_signed_immediate_if_flag(&mem, &mut pc, &freg, ZeroFlag);
+    relative_jmp_by_signed_immediate_if_true(&mem, &mut pc, true);
     assert!(pc.read() == 0x1281, "Should jump back"); 
-    
-    // No jump because ZeroFlag is not set
-    freg.write(Flags::empty());
+   
+    // no jump
     mem.write_byte(0x1281, 0xFF);
-    relative_jmp_by_signed_immediate_if_flag(&mem, &mut pc, &freg, ZeroFlag);
+    relative_jmp_by_signed_immediate_if_true(&mem, &mut pc, false);
     assert!(pc.read() == 0x1282, "Should not jump if ZeroFlag is not set. PC should increment to go past immediate value");
 
 }
@@ -2090,30 +2078,6 @@ fn test_write_value_to_memory_at_address_and_increment_register() {
     assert!(mem.read_byte(0x12FF) == 0x8);
     assert!(high_byte.read() == 0x13);
     assert!(low_byte.read() == 0x00);
-}
-
-#[test]
-fn test_relative_jmp_by_signed_immediate_if_not_flag() {
-    let mut mem = EmptyMemory::new(0xFFFF);
-    let mut pc = Register::new(0x1234);
-    let mut freg = Register::new(Flags::empty());
-
-    // Forwards
-    mem.write_byte(0x1234, 0x55);
-    relative_jmp_by_signed_immediate_if_not_flag(&mem, &mut pc, &freg, ZeroFlag);
-    assert!(pc.read() == 0x128A, "Should jump forwards");
-
-    // Backwards
-    mem.write_byte(0x1289, 0x85);
-    relative_jmp_by_signed_immediate_if_not_flag(&mem, &mut pc, &freg, CarryFlag);
-    assert!(pc.read() == 0x128B, "Should jump back"); 
-    
-    // No jump because ZeroFlag is set
-    freg.write(ZeroFlag);
-    mem.write_byte(0x128B, 0xFF);
-    relative_jmp_by_signed_immediate_if_not_flag(&mem, &mut pc, &freg, ZeroFlag);
-    println!("{}", pc.read());
-    assert!(pc.read() == 0x128C, "Should not jump if ZeroFlag is set");
 }
 
 #[test]
