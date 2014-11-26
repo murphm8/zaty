@@ -9,7 +9,7 @@ pub trait Memory {
     fn read_byte(&self, addr: u16) -> u8;
     fn read_word(&self, addr: u16) -> u16;
     fn write_byte(&mut self, addr: u16, data: u8);
-    fn write_word(&mut self, addr: u16, data: u16) ;
+    fn write_word(&mut self, addr: u16, data: u16);
 }
 
 pub struct EmptyMemory {
@@ -54,7 +54,7 @@ bitflags! {
 pub struct GameboyMemory {
     rom: &'static [u8],
     mem: Vec<u8>,
-    rom_bank: uint,
+    rom_bank: u8,
     external_ram_enable: bool,
     banking_mode: RomRamMode
 }
@@ -89,41 +89,92 @@ impl GameboyMemory {
     }
 
     fn write_internal(&mut self, addr: uint, val: u8) {
-        if addr >= 0x0100 && addr <= 0x014F {
-            return;
+        match addr {
+            0x0000...0x1FFF => {
+                return; 
+            } // External Ram Enable
+            0x2000...0x3FFF => {
+                let masked_val = val & 0x1F;
+                debug!("Set lower 5 bits of ROM bank number to {:X}", masked_val);
+                let upper_bits = self.rom_bank & 0xE0;
+                self.rom_bank = upper_bits | masked_val;
+                return; 
+            } // Lower 5 bits ROM Bank Number 0x20 0x40 0x60 will select 0x21 0x41 0x61
+            0x4000...0x5FFF => {
+                return;
+            } // RAM Bank Number or Upper Bits of ROM Bank Number
+            0x6000...0x7FFF => {
+                return;
+            } // ROM/RAM Mode Select
+            _ => self.mem[addr] = val,
         }
-        if addr >= 0x2000 && addr <= 0x3FFF {
-            debug!("Select Bank {}", val);
-            self.rom_bank = (val & 0x1F) as uint;
-            return;
-        }
-        if addr >= 0x4000 && addr <= 0x5FFF {
-           debug!("Set upper bank bits {}", val); 
-           return;
-        }
-        if addr >= 0x6000 && addr <= 0x7FFF {
-            debug!("Switch Banking Mode {}", val);
-            match val {
-                0 => self.banking_mode = RomBankingMode,
-                _ => self.banking_mode = RamBankingMode
-            }
-            return;
-        }
-        self.mem[addr] = val;
     }
 
     fn read_internal(&self, addr: uint) -> u8 {
-        if addr >= 0x0100 && addr <= 0x7FFF {
-            if addr <= 0x3FFF {
+        match addr {
+            0x0000...0x00FF => {
+                debug!("Restart and Interrupt Vectors");
+                return self.mem[addr];
+            },
+            0x0100...0x014F => {
+                debug!("Header");
                 return self.rom[addr];
-            } else {
-                let real_addr = addr + (0x4000 * (self.rom_bank - 1)); // 0x4000 - 0x7FFF
-                let val = self.rom[real_addr];
-                debug!("rom bank access bank_no: {}, cartridge_addr: {:X}, val: {:X}", self.rom_bank, real_addr, val);
-                return val;
-            }
+            },
+            0x0150...0x3FFF => {
+                debug!("ROM Bank 0");
+                return self.rom[addr]
+            },
+            0x4000...0x7FFF => {
+                debug!("ROM Bank {}", self.rom_bank);
+                let translated_addr = addr + (0x4000 * (self.rom_bank as uint - 1));
+                return self.rom[translated_addr];
+            },
+            0x8000...0x97FF => {
+                debug!("Character RAM");
+                return self.mem[addr];
+            },
+            0x9800...0x9BFF => {
+                debug!("BG1");
+                return self.mem[addr];
+            },
+            0x9C00...0x9FFF => {
+                debug!("BG2");
+                return self.mem[addr];
+            },
+            0xA000...0xBFFF => {
+                debug!("Cartridge RAM");
+                assert!(self.external_ram_enable, "External RAM is not enabled, but it is being accessed");
+                return self.mem[addr];
+            },
+            0xC000...0xCFFF => {
+                debug!("RAM Bank 0");
+                return self.mem[addr];
+            },
+            0xD000...0xDFFF => {
+                debug!("RAM Bank 1");
+                return self.mem[addr];
+            },
+            0xE000...0xFDFF => panic!("Echo RAM Do Not Use"),
+            0xFE00...0xFE9F => {
+                debug!("OAM Sprite Table");
+                return self.mem[addr];
+            },
+            0xFEA0...0xFEFF => panic!("Unusable memory"),
+            0xFF00...0xFF7F => {
+                debug!("Hardware I/O");
+                return self.mem[addr];
+            },
+            0xFF80...0xFFFE => {
+                debug!("Zero Page 127 bytes");
+                return self.mem[addr];
+            },
+            0xFFFF => {
+                debug!("Interrupt Register");
+                return self.mem[addr];
+            },
+            _ => panic!(),
         }
-        return self.mem[addr];
+
     }
 
 }
