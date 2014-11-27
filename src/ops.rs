@@ -134,8 +134,9 @@ fn internal_rotate_left_with_carry(val: u8, freg: &mut Register<Flags>) -> u8 {
     freg.write(Flags::empty());
 
     let bit_7 = (val & 0x80) >> 7;
+    let result = (val << 1) | bit_7;
 
-    if val == 0 {
+    if result == 0 {
         freg.write(ZeroFlag);
         return val;
     }
@@ -144,7 +145,7 @@ fn internal_rotate_left_with_carry(val: u8, freg: &mut Register<Flags>) -> u8 {
         freg.write(CarryFlag);
     }
 
-    return (val << 1) | bit_7;
+    return result;
 }
 
 /// Rotate register left
@@ -213,16 +214,17 @@ pub fn decrement_register_pair(reg1: &mut Register<u8>, reg2: &mut Register<u8>)
 
 fn internal_rotate_right_with_carry(val: u8, freg: &mut Register<Flags>) -> u8 {    
     let bit_1 = (val & 0x01) << 7;
+    let result = ((val >> 1) | bit_1);
 
-    if val == 0 {
+    if result == 0 {
         freg.write(ZeroFlag);
-        return 0;
-    } else {
-        if val & 0x01 == 1 {
-            freg.write(CarryFlag);
-        }
-        return ((val >> 1) | bit_1);
+    } 
+
+    if val & 0x01 == 1 {
+        freg.write(CarryFlag);
     }
+
+    return result;
 }
 
 pub fn rotate_right_with_carry(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
@@ -655,40 +657,45 @@ pub fn rotate_left_at_address(mem: &mut Memory, addr: u16, freg: &mut Register<F
 
 fn internal_rotate_left(val: u8, freg: &mut Register<Flags>) -> u8 {
     let mut carry = 0;
+
     if freg.read().contains(CarryFlag) {
         carry = 1;
     }
 
+    let result = (val << 1) | carry;
+
     freg.write(Flags::empty());
-    if val == 0 {
+    if result == 0 {
         freg.write(ZeroFlag);
-        return val;
     }
 
     if val & 0x80 != 0 {
         freg.write(CarryFlag);
     }
 
-    return (val << 1) | carry;
+    return result;
 }
 
 fn internal_rotate_right(val: u8, freg: &mut Register<Flags>) -> u8 {
     let mut carry = 0;
+
     if freg.read().contains(CarryFlag) {
         carry = 0x80;
     }
 
+    let result = (val >> 1) | carry;
+
     freg.write(Flags::empty());
-    if val == 0 {
+
+    if result == 0 {
         freg.write(ZeroFlag);
-        return val;
     }
 
     if val & 0x01 != 0 {
         freg.write(CarryFlag);
     }
 
-    return (val >> 1) | carry;
+    return result;
 }
 
 pub fn rotate_right(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
@@ -703,16 +710,17 @@ pub fn rotate_right_at_address(mem: &mut Memory, addr: u16, freg: &mut Register<
 
 fn internal_sla(val: u8, freg: &mut Register<Flags>) -> u8 {
     freg.write(Flags::empty());
-    if val == 0 {
+    let result = val << 1;
+
+    if result == 0 {
         freg.write(ZeroFlag);
-        return 0;
     }
 
     if val & 0x80 != 0 {
         freg.write(CarryFlag);
     }
 
-    return val << 1;
+    return result;
 }
 
 pub fn sla(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
@@ -727,7 +735,11 @@ pub fn sla_at_address(mem: &mut Memory, addr: u16, freg: &mut Register<Flags>) {
 
 fn internal_sra(val: u8, freg: &mut Register<Flags>) -> u8 {
     freg.write(Flags::empty());
-    if val == 0 {
+
+    let bit_7 = val & 0x80;
+    let result = (val >> 1) | bit_7;
+
+    if result == 0 {
         freg.write(ZeroFlag);
         return 0;
     }
@@ -735,9 +747,7 @@ fn internal_sra(val: u8, freg: &mut Register<Flags>) -> u8 {
     if val & 0x01 == 1 {
         freg.write(CarryFlag);
     }
-
-    let bit_7 = val & 0x80;
-    return (val >> 1) | bit_7;
+    return result;
 }
 
 pub fn sra(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
@@ -752,12 +762,13 @@ pub fn sra_at_address(mem: &mut Memory, addr: u16, freg: &mut Register<Flags>) {
 
 fn internal_swap(val: u8, freg: &mut Register<Flags>) -> u8 {
     freg.write(Flags::empty());
-
-    if val == 0 {
+    let result = (low_nibble(val) << 4) + high_nibble(val);
+    
+    if result == 0 {
         freg.write(ZeroFlag);
     }
 
-    return (low_nibble(val) << 4) + high_nibble(val);
+    return result;
 }
 
 pub fn swap(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
@@ -772,8 +783,9 @@ pub fn swap_at_address(mem: &mut Memory, addr: u16, freg: &mut Register<Flags>) 
 
 fn internal_srl(val: u8, freg: &mut Register<Flags>) -> u8 {
     freg.write(Flags::empty());
+    let result = val >> 1;
 
-    if val == 0 {
+    if result == 0 {
         freg.write(ZeroFlag);
     }
 
@@ -781,7 +793,7 @@ fn internal_srl(val: u8, freg: &mut Register<Flags>) -> u8 {
         freg.write(CarryFlag);
     }
 
-    return val >> 1;
+    return result;
 }
 
 pub fn srl(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
