@@ -603,9 +603,9 @@ pub fn bit(reg_val: u8, pos: u8, freg: &mut Register<Flags>) {
     assert!(pos < 8, "Bit positions are 0-7");
 
     let mask = 0x01 << pos as uint;
-    let val = reg_val & mask;
+    let result = reg_val & mask;
 
-    if val == 0 {
+    if result == 0 {
         flags.insert(ZeroFlag);
     } else {
         flags.remove(ZeroFlag);
