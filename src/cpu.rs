@@ -39,11 +39,11 @@ impl<'a> Cpu<'a> {
             self.mem.write_byte(0xFF02, 0x00);
         }
     }
-   
+
     /// Execute a cycle on the cpu
     pub fn tick(&mut self) {
         self.check_serial();
-        let instr = self.fetch_instruction(); 
+        let instr = self.fetch_instruction();
         debug!("instr: {:X}", instr);
         let a = self.reg.a.read();
         let b = self.reg.b.read();
@@ -67,7 +67,7 @@ impl<'a> Cpu<'a> {
             0x04 => opcode!(ops::increment_register(&mut self.reg.b, &mut self.reg.f), "INC B", self),
             0x05 => opcode!(ops::decrement_register(&mut self.reg.b, &mut self.reg.f), "DEC B", self),
             0x06 => opcode!(ops::ld_u8(&mut self.reg.b, ops::u8_immediate(&mut *self.mem, &mut self.reg.pc)), "LD B, n", self),
-            0x07 => opcode!(ops::rotate_left_with_carry(&mut self.reg.a, &mut self.reg.f), "RLC A", self),
+            0x07 => opcode!(ops::rotate_left_with_carry_reset_zero(&mut self.reg.a, &mut self.reg.f), "RLCA", self),
             0x08 => opcode!(ops::write_u16_immediate_address(&mut *self.mem, &mut self.reg.pc, sp), "LD (nn), SP", self),
             0x09 => opcode!(ops::add_register_pair_to_register_pair(&mut self.reg.h, &mut self.reg.l, b, c, &mut self.reg.f), "ADD HL, BC", self),
             0x0A => opcode!(ops::ld_from_address(&mut *self.mem, &mut self.reg.a, pack_u16(b, c)), "LD A, (BC)", self),
@@ -75,7 +75,7 @@ impl<'a> Cpu<'a> {
             0x0C => opcode!(ops::increment_register(&mut self.reg.c, &mut self.reg.f), "INC C", self),
             0x0D => opcode!(ops::decrement_register(&mut self.reg.c, &mut self.reg.f), "DEC C", self),
             0x0E => opcode!(ops::ld_u8(&mut self.reg.c, ops::u8_immediate(&mut *self.mem, &mut self.reg.pc)), "LD C, n", self),
-            0x0F => opcode!(ops::rotate_right_with_carry(&mut self.reg.a, &mut self.reg.f), "RRC A", self),
+            0x0F => opcode!(ops::rotate_right_with_carry_reset_zero(&mut self.reg.a, &mut self.reg.f), "RRCA", self),
 
             0x10 => opcode!(panic!("STOP Op Code not implemented and is being used"), "STOP", self),
             0x11 => opcode!(ops::ld_u16_immediate(&mut *self.mem, &mut self.reg.pc, &mut self.reg.d, &mut self.reg.e), "LD DE, nn", self),
@@ -84,7 +84,7 @@ impl<'a> Cpu<'a> {
             0x14 => opcode!(ops::increment_register(&mut self.reg.d, &mut self.reg.f), "INC D", self),
             0x15 => opcode!(ops::decrement_register(&mut self.reg.d, &mut self.reg.f), "DEC D", self),
             0x16 => opcode!(ops::ld_u8(&mut self.reg.d, ops::u8_immediate(&mut *self.mem, &mut self.reg.pc)), "LD D, n", self),
-            0x17 => opcode!(ops::rotate_left_with_carry(&mut self.reg.a, &mut self.reg.f), "RL A", self),
+            0x17 => opcode!(ops::rotate_left_reset_zeroflag(&mut self.reg.a, &mut self.reg.f), "RLA", self),
             0x18 => opcode!(ops::jump_by_signed_immediate(&mut *self.mem, &mut self.reg.pc), "JR n", self),
             0x19 => opcode!(ops::add_register_pair_to_register_pair(&mut self.reg.h, &mut self.reg.l, d, e, &mut self.reg.f), "Add HL, DE", self),
             0x1A => opcode!(ops::ld_from_address(&mut *self.mem, &mut self.reg.a, pack_u16(d, e)), "LD A, (DE)", self),
@@ -92,7 +92,7 @@ impl<'a> Cpu<'a> {
             0x1C => opcode!(ops::increment_register(&mut self.reg.e, &mut self.reg.f), "INC E", self),
             0x1D => opcode!(ops::decrement_register(&mut self.reg.e, &mut self.reg.f), "DEC E", self),
             0x1E => opcode!(ops::ld_u8(&mut self.reg.e, ops::u8_immediate(&mut *self.mem, &mut self.reg.pc)), "LD E, n", self),
-            0x1F => opcode!(ops::rotate_right_with_carry(&mut self.reg.a, &mut self.reg.f), "RR A", self),
+            0x1F => opcode!(ops::rotate_right_reset_zeroflag(&mut self.reg.a, &mut self.reg.f), "RRA", self),
 
             0x20 => opcode!(ops::relative_jmp_by_signed_immediate_if_true(&mut *self.mem, &mut self.reg.pc, not_zero), "JR NZ, n", self),
             0x21 => opcode!(ops::ld_u16_immediate(&mut *self.mem, &mut self.reg.pc, &mut self.reg.h, &mut self.reg.l), "LD HL, nn", self),
@@ -274,7 +274,7 @@ impl<'a> Cpu<'a> {
             0xD0 => opcode!(ops::ret(&mut *self.mem, &mut self.reg.pc, &mut self.reg.sp, no_carry), "RET NC", self),
             0xD1 => opcode!(ops::pop(&mut *self.mem, &mut self.reg.sp, &mut self.reg.d, &mut self.reg.e), "POP DE ", self),
             0xD2 => opcode!(ops::jp_u16_immediate_if_true(&mut *self.mem, &mut self.reg.pc, no_carry), "JP NC, nn", self),
-            0xD3 => panic!("0xD3 should never be executed"), 
+            0xD3 => panic!("0xD3 should never be executed"),
             0xD4 => opcode!(ops::call_immediate_if_true(&mut *self.mem, &mut self.reg.pc, &mut self.reg.sp, no_carry), "CALL NC, nn", self),
             0xD5 => opcode!(ops::push(&mut *self.mem, &mut self.reg.sp, pack_u16(d, e)), "PUSH DE ", self),
             0xD6 => opcode!(ops::sub_u8_immediate(&mut *self.mem, &mut self.reg.pc, &mut self.reg.a, &mut self.reg.f, false), "SUB A, n", self),
@@ -284,14 +284,14 @@ impl<'a> Cpu<'a> {
             0xDA => opcode!(ops::jp_u16_immediate_if_true(&mut *self.mem, &mut self.reg.pc, carry), "JP C, nn", self),
             0xDB => panic!("0xDB should never be executed"),
             0xDC => opcode!(ops::call_immediate_if_true(&mut *self.mem, &mut self.reg.pc, &mut self.reg.sp, carry), "CALL C, nn", self),
-            0xDD => panic!("0xDD should never be executed"), 
+            0xDD => panic!("0xDD should never be executed"),
             0xDE => opcode!(ops::sub_u8_immediate(&mut *self.mem, &mut self.reg.pc, &mut self.reg.a, &mut self.reg.f, true), "SBC A, n", self),
             0xDF => opcode!(ops::call(&mut *self.mem, &mut self.reg.pc, &mut self.reg.sp, 0x18), "RST 18", self),
             0xE0 => opcode!(ops::write_val_FF00_plus_immediate(&mut *self.mem, &mut self.reg.pc, a), "LDH (n), A", self),
             0xE1 => opcode!(ops::pop(&mut *self.mem, &mut self.reg.sp, &mut self.reg.h, &mut self.reg.l), "POP HL ", self),
             0xE2 => opcode!(panic!("Not Implemented"), "LDH (C), A", self),
-            0xE3 => panic!("0xE3 should never be executed"), 
-            0xE4 => panic!("0xE4 should never be executed"), 
+            0xE3 => panic!("0xE3 should never be executed"),
+            0xE4 => panic!("0xE4 should never be executed"),
             0xE5 => opcode!(ops::push(&mut *self.mem, &mut self.reg.sp, pack_u16(h, l)), "PUSH HL ", self),
             0xE6 => opcode!(ops::and(&mut self.reg.a, ops::u8_immediate(&mut *self.mem, &mut self.reg.pc), &mut self.reg.f), "AND A, n", self),
             0xE7 => opcode!(ops::call(&mut *self.mem, &mut self.reg.pc, &mut self.reg.sp, 0x20), "RST 20", self),
@@ -300,7 +300,7 @@ impl<'a> Cpu<'a> {
             0xEA => opcode!(ops::write_value_to_u16_immediate(&mut *self.mem, &mut self.reg.pc, a), "LD (nn), A ", self),
             0xEB => panic!("0xEB should never be executed"),
             0xEC => panic!("0xEC should never be executed"),
-            0xED => panic!("0xED should never be executed"), 
+            0xED => panic!("0xED should never be executed"),
             0xEE => opcode!(ops::xor(&mut self.reg.a, ops::u8_immediate(&mut *self.mem, &mut self.reg.pc), &mut self.reg.f), "XOR n", self),
             0xEF => opcode!(ops::call(&mut *self.mem, &mut self.reg.pc, &mut self.reg.sp, 0x28), "RST 28", self),
 
@@ -321,21 +321,21 @@ impl<'a> Cpu<'a> {
             0xFE => opcode!(ops::compare(&mut self.reg.a, ops::u8_immediate(&*self.mem, &mut self.reg.pc), &mut self.reg.f), "CP A, n ", self),
             0xFF => panic!("Not Implemented"),
 
-            _ => panic!("Missing opcode!!!! {:X}", instr) 
+            _ => panic!("Missing opcode!!!! {:X}", instr)
         }
     }
-   
+
     /// Fetches the instruction pointed to by the program counter
     /// and increments the pc by 1
     fn fetch_instruction(&mut self) -> u8 {
         let instr = self.mem.read_byte(self.reg.pc.read());
         self.reg.pc.increment();
-        return instr;     
+        return instr;
     }
 
     fn extended_opcodes(&mut self) {
-        let instr = self.fetch_instruction(); 
-        
+        let instr = self.fetch_instruction();
+
         let a = self.reg.a.read();
         let b = self.reg.b.read();
         let c = self.reg.c.read();
@@ -397,7 +397,7 @@ impl<'a> Cpu<'a> {
             0x2D => opcode!(ops::sra(&mut self.reg.l, &mut self.reg.f), "SRA C", self),
             0x2E => opcode!(ops::sra_at_address(&mut *self.mem, pack_u16(h, l), &mut self.reg.f), "SRA (HL) ", self),
             0x2F => opcode!(ops::sra(&mut self.reg.a, &mut self.reg.f), "SRA E", self),
-            
+
             0x30 => opcode!(ops::swap(&mut self.reg.b, &mut self.reg.f), "SLA B", self),
             0x31 => opcode!(ops::swap(&mut self.reg.c, &mut self.reg.f), "SLA C", self),
             0x32 => opcode!(ops::swap(&mut self.reg.d, &mut self.reg.f), "SLA D", self),
@@ -516,7 +516,7 @@ impl<'a> Cpu<'a> {
             0x9D => opcode!(ops::res(&mut self.reg.l, 3), "RES 3, L", self),
             0x9E => opcode!(ops::res_at_addr(&mut *self.mem, pack_u16(h,l), 3), "RES 3, (HL)", self),
             0x9F => opcode!(ops::res(&mut self.reg.a, 3), "RES 3, A", self),
-            
+
             0xA0 => opcode!(ops::res(&mut self.reg.b, 4), "RES 4, B", self),
             0xA1 => opcode!(ops::res(&mut self.reg.c, 4), "RES 4, C", self),
             0xA2 => opcode!(ops::res(&mut self.reg.d, 4), "RES 4, D", self),
@@ -533,7 +533,7 @@ impl<'a> Cpu<'a> {
             0xAD => opcode!(ops::res(&mut self.reg.l, 5), "RES 5, L", self),
             0xAE => opcode!(ops::res_at_addr(&mut *self.mem, pack_u16(h,l), 5), "RES 5, (HL)", self),
             0xAF => opcode!(ops::res(&mut self.reg.a, 5), "RES 5, A", self),
- 
+
             0xB0 => opcode!(ops::res(&mut self.reg.b, 6), "RES 6, B", self),
             0xB1 => opcode!(ops::res(&mut self.reg.c, 6), "RES 6, C", self),
             0xB2 => opcode!(ops::res(&mut self.reg.d, 6), "RES 6, D", self),
@@ -584,7 +584,7 @@ impl<'a> Cpu<'a> {
             0xDD => opcode!(ops::set(&mut self.reg.l, 3), "SET 3, L", self),
             0xDE => opcode!(ops::set_at_addr(&mut *self.mem, pack_u16(h,l), 3), "SET 3, (HL)", self),
             0xDF => opcode!(ops::set(&mut self.reg.a, 3), "SET 3, A", self),
-            
+
             0xE0 => opcode!(ops::set(&mut self.reg.b, 4), "SET 4, B", self),
             0xE1 => opcode!(ops::set(&mut self.reg.c, 4), "SET 4, C", self),
             0xE2 => opcode!(ops::set(&mut self.reg.d, 4), "SET 4, D", self),
@@ -601,7 +601,7 @@ impl<'a> Cpu<'a> {
             0xED => opcode!(ops::set(&mut self.reg.l, 5), "SET 5, L", self),
             0xEE => opcode!(ops::set_at_addr(&mut *self.mem, pack_u16(h,l), 5), "SET 5, (HL)", self),
             0xEF => opcode!(ops::set(&mut self.reg.a, 5), "SET 5, A", self),
- 
+
             0xF0 => opcode!(ops::set(&mut self.reg.b, 6), "SET 6, B", self),
             0xF1 => opcode!(ops::set(&mut self.reg.c, 6), "SET 6, C", self),
             0xF2 => opcode!(ops::set(&mut self.reg.d, 6), "SET 6, D", self),
@@ -618,14 +618,14 @@ impl<'a> Cpu<'a> {
             0xFD => opcode!(ops::set(&mut self.reg.l, 7), "SET 7, L", self),
             0xFE => opcode!(ops::set_at_addr(&mut *self.mem, pack_u16(h,l), 7), "SET 7, (HL)", self),
             0xFF => opcode!(ops::set(&mut self.reg.a, 7), "SET 7, A", self),
-            _ => panic!("Missing opcode!!!! {:X}", instr) 
+            _ => panic!("Missing opcode!!!! {:X}", instr)
         }
     }
 }
 
 struct Registers {
-    a: Register<u8>, b: Register<u8>, c: Register<u8>, 
-    d: Register<u8>, e: Register<u8>, f: Register<Flags>, 
+    a: Register<u8>, b: Register<u8>, c: Register<u8>,
+    d: Register<u8>, e: Register<u8>, f: Register<Flags>,
     h: Register<u8>, l: Register<u8>, // 8-bit registers
 
     pc: Register<u16>, sp: Register<u16>, // 16-bit registers
@@ -658,7 +658,7 @@ impl Registers {
 }
 
 pub struct Register<T: Copy> {
-    val: T 
+    val: T
 }
 
 impl<T: Copy> Register<T> {
@@ -712,7 +712,7 @@ fn test_Register_read() {
 #[test]
 fn test_Register_write() {
     let mut reg: Register<u16> = Register::new(483);
-    
+
     reg.write(5);
     assert!(reg.val == 5);
 }
@@ -720,7 +720,7 @@ fn test_Register_write() {
 #[test]
 fn test_Register_increment() {
     let mut reg: Register<u16> = Register::new(483);
-    
+
     reg.increment();
     assert!(reg.val == 484);
 
@@ -729,7 +729,7 @@ fn test_Register_increment() {
 #[test]
 fn test_Register_decrement() {
     let mut reg: Register<u16> = Register::new(401);
-    
+
     reg.decrement();
     assert!(reg.val == 400);
 
