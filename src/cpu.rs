@@ -16,7 +16,7 @@ macro_rules! opcode(
             $func;
         }
     );
-)
+);
 
 
 pub struct Cpu<'a> {
