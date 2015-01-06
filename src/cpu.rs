@@ -3,7 +3,9 @@ use extensions::Incrementor;
 use ops::{mod};
 use std::num::{Unsigned, One};
 
-
+// TODO: Don't use registers, use straight uints
+// TODO: Return tuples to set the registers for a more purely functional paradigm of opcodes
+// TODO: Rename functions to be more standard opscode_memsize_immediate_address
 macro_rules! opcode(
     ($func:expr, $opcode_string:tt, $cpu:ident) => ( // invoke it like `(ops::func(), "OPCode")`
         {

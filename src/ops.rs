@@ -2,6 +2,11 @@ use memory::{EmptyMemory, Memory, pack_u16, high_byte, low_byte, low_nibble, hig
 use extensions::Incrementor;
 use cpu::{Register, Flags, CarryFlag, HalfCarryFlag, ZeroFlag, SubtractFlag};
 
+// TODO: Rewrite tests to exervise all values, use bigger num sizes to detent overflow and other
+// things another way?
+// TODO: Split opcodes into separate files ops::add::func
+// TODO: Implement functions on types instead of doing logic in method? eg u8.rotate_right(carry)
+
 fn half_carry_for_add(val1: u8, val2: u8, with_carry: bool) -> bool {
     let mut c = 0;
     if with_carry { c = 1; }
