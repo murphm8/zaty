@@ -1,7 +1,7 @@
 use memory::{Memory, low_nibble, high_nibble, low_byte, high_byte, pack_u16};
 use extensions::Incrementor;
 use ops::{mod};
-use std::num::{Unsigned, One};
+use std::num::{UnsignedInt, Int};
 
 // TODO: Don't use registers, use straight uints
 // TODO: Return tuples to set the registers for a more purely functional paradigm of opcodes
@@ -678,15 +678,15 @@ impl<T: Copy> Register<T> {
 }
 
 
-impl<T: Copy + Unsigned>  Register<T> {
+impl<T: Copy + UnsignedInt>  Register<T> {
     pub fn increment(&mut self) {
         let i = self.val;
-        self.write(i + One::one());
+        self.write(i + Int::one());
     }
 
     pub fn decrement(&mut self) {
         let i = self.val;
-        self.write(i - One::one());
+        self.write(i - Int::one());
     }
 }
 

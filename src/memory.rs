@@ -1,9 +1,8 @@
-use std::rand::Rng;
 use std::rand;
 use std::iter::range_inclusive;
 use std::iter::range_step_inclusive;
 use std::path::Path;
-
+use std::iter::repeat;
 
 pub trait Memory {
     fn read_byte(&self, addr: u16) -> u8;
@@ -18,8 +17,8 @@ pub struct EmptyMemory {
 
 impl EmptyMemory {
     pub fn new(size: uint) -> EmptyMemory {
-        let mut mem = Vec::from_elem(size, 0);
-        return EmptyMemory{ mem: mem } 
+        let mut mem = repeat(0).take(size).collect();
+        return EmptyMemory{ mem: mem }
     }
 }
 
@@ -60,7 +59,7 @@ pub struct GameboyMemory {
 }
 
 impl Memory for GameboyMemory {
-    
+
     fn read_byte(&self, addr: u16) -> u8 {
         return self.read_internal(addr as uint);
     }
@@ -83,22 +82,22 @@ impl Memory for GameboyMemory {
 
 impl GameboyMemory {
     pub fn new(size: uint) -> GameboyMemory {
-        let mut mem = Vec::from_elem(size, 0);
+        let mut mem = repeat(0).take(size).collect();
         return GameboyMemory{ mem: mem, rom: include_bin!("bin_tests/06-ld r,r.gb"), rom_bank: 1,
-        external_ram_enable: false, banking_mode: RomBankingMode } 
+        external_ram_enable: false, banking_mode: RomBankingMode }
     }
 
     fn write_internal(&mut self, addr: uint, val: u8) {
         match addr {
             0x0000...0x1FFF => {
-                return; 
+                return;
             } // External Ram Enable
             0x2000...0x3FFF => {
                 let masked_val = val & 0x1F;
                 debug!("Set lower 5 bits of ROM bank number to {:X}", masked_val);
                 let upper_bits = self.rom_bank & 0xE0;
                 self.rom_bank = upper_bits | masked_val;
-                return; 
+                return;
             } // Lower 5 bits ROM Bank Number 0x20 0x40 0x60 will select 0x21 0x41 0x61
             0x4000...0x5FFF => {
                 return;
@@ -196,7 +195,7 @@ pub fn high_byte(num: u16) -> u8 {
 }
 
 pub fn pack_u16(high: u8, low: u8) -> u16 {
-    return (high as u16 << 8) + low as u16;
+    return ((high as u16) << 8) + low as u16;
 }
 
 #[test]
@@ -236,11 +235,10 @@ fn test_pack_u16() {
 #[test]
 fn test_emptymemory_write_byte() {
     let mut memory = EmptyMemory::new(65536);
-    let mut rng = rand::task_rng();
 
     for n in range_inclusive(0, 0xFFFF)
     {
-        let num = rng.gen::<u8>();
+        let num = rand::random();
         memory.write_byte(n, num);
         assert!(memory.mem[n as uint] == num);
     }
@@ -249,11 +247,10 @@ fn test_emptymemory_write_byte() {
 #[test]
 fn test_emptymemory_write_word() {
     let mut memory = EmptyMemory::new(65536);
-    let mut rng = rand::task_rng();
 
     for n in range_step_inclusive(0, 0xFFFF, 2)
     {
-        let num = rng.gen::<u16>();
+        let num = rand::random();
         memory.write_word(n, num);
         assert!(memory.mem[n as uint] == low_byte(num));
         assert!(memory.mem[(n + 1) as uint] == high_byte(num));
@@ -263,7 +260,7 @@ fn test_emptymemory_write_word() {
 #[test]
 fn test_emptymemory_read_byte() {
     let mut memory = EmptyMemory::new(65536);
-    
+
     memory.mem[0] = 0xF1;
     assert!(memory.read_byte(0) == 0xF1);
 
@@ -277,7 +274,7 @@ fn test_emptymemory_read_byte() {
 #[test]
 fn test_emptymemory_read_word() {
     let mut memory = EmptyMemory::new(65536);
-    
+
     memory.mem[0] = 0xF1;
     memory.mem[1] = 0xEA;
     assert!(memory.read_word(0) == 0xEAF1);
