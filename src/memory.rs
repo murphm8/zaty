@@ -83,7 +83,7 @@ impl Memory for GameboyMemory {
 impl GameboyMemory {
     pub fn new(size: uint) -> GameboyMemory {
         let mut mem = repeat(0).take(size).collect();
-        return GameboyMemory{ mem: mem, rom: include_bin!("bin_tests/06-ld r,r.gb"), rom_bank: 1,
+        return GameboyMemory{ mem: mem, rom: include_bytes!("bin_tests/06-ld r,r.gb"), rom_bank: 1,
         external_ram_enable: false, banking_mode: RomBankingMode }
     }
 

@@ -1,16 +1,11 @@
-#![feature(macro_rules)]
 #![feature(phase)]
 #[phase(plugin, link)] extern crate log;
+extern crate zaty;
 
-use memory::Memory;
-use memory::GameboyMemory;
-use cpu::Cpu;
+use zaty::memory::Memory;
+use zaty::memory::GameboyMemory;
+use zaty::cpu::Cpu;
 use std::io::stdio::stdin;
-
-mod memory;
-mod ops;
-mod extensions;
-mod cpu;
 
 fn main() {
     let mut memory = box GameboyMemory::new(0x10000);

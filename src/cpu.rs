@@ -1,6 +1,6 @@
 use memory::{Memory, low_nibble, high_nibble, low_byte, high_byte, pack_u16};
 use extensions::Incrementor;
-use ops::{mod};
+use ops::{self};
 use std::num::{UnsignedInt, Int};
 
 // TODO: Don't use registers, use straight uints
