@@ -2,56 +2,20 @@ use memory::{EmptyMemory, Memory, pack_u16, high_byte, low_byte, low_nibble, hig
 use extensions::Incrementor;
 use cpu::{Register, Flags, CarryFlag, HalfCarryFlag, ZeroFlag, SubtractFlag};
 
+pub use self::add::adc;
+pub use self::add::add;
+pub use self::add::add_value_at_address;
+pub use self::add::add_u8_immediate;
+pub use self::add::adc_value_at_address;
+pub use self::utils::u8_immediate;
+
+mod add;
+mod utils;
+
 // TODO: Rewrite tests to exervise all values, use bigger num sizes to detent overflow and other
 // things another way?
 // TODO: Split opcodes into separate files ops::add::func
 // TODO: Implement functions on types instead of doing logic in method? eg u8.rotate_right(carry)
-
-fn half_carry_for_add(val1: u8, val2: u8, with_carry: bool) -> bool {
-    let mut c = 0;
-    if with_carry { c = 1; }
-    return (low_nibble(val1) + low_nibble(val2) + c) > 0x0F
-}
-
-fn carry_for_add(val1: u8, val2: u8, with_carry: bool) -> bool {
-    let mut c = 0;
-    if with_carry { c = 1; }
-    return val1 as u16 + val2 as u16 + c > 0xFF;
-}
-
-fn add_internal(first: &mut Register<u8>, second: u8, freg: &mut Register<Flags>, with_carry: bool) {
-    let val1 = first.read();
-    let val2 = second;
-    let mut result = val1 + val2;
-    let mut do_carry = false;
-
-    if freg.read().contains(CarryFlag) && with_carry {
-        do_carry = true;
-        result += 1;
-    }
-
-    let mut flags = Flags::empty();
-
-    if half_carry_for_add(val1, val2, do_carry) {
-        flags = HalfCarryFlag;
-    }
-
-    if carry_for_add(val1, val2, do_carry) {
-        flags = flags | CarryFlag;
-    }
-
-    if result == 0 {
-        flags = ZeroFlag;
-    }
-
-    first.write(result);
-    freg.write(flags);
-}
-
-/// Add the value of two registers and store it in the first register
-pub fn add(first: &mut Register<u8>, second: u8, freg: &mut Register<Flags>) {
-    add_internal(first, second, freg, false);
-}
 
 /// Load the value from one register into another
 pub fn ld_reg_to_reg(target: &mut Register<u8>, source: &Register<u8>) {
@@ -374,19 +338,6 @@ pub fn ld_u8(reg: &mut Register<u8>, val: u8) {
     reg.write(val);
 }
 
-pub fn add_value_at_address(mem: &Memory, reg: &mut Register<u8>, hb: u8, lb: u8, freg: &mut Register<Flags>) {
-   let val = mem.read_byte(pack_u16(hb, lb));
-   add(reg, val, freg);
-}
-
-pub fn adc(reg: &mut Register<u8>, val: u8, freg: &mut Register<Flags>) {
-    add_internal(reg, val, freg, true);
-}
-
-pub fn adc_value_at_address(mem: &Memory, reg: &mut Register<u8>, address: u16, freg: &mut Register<Flags>) {
-    let val = mem.read_byte(address);
-    adc(reg, val, freg);
-}
 
 fn half_carry_for_subtract(val1: u8, val2: u8, carry: u8) -> bool {
     if low_nibble(val2) + carry == 0x10 && val1 >= 0x10 {
@@ -579,10 +530,7 @@ pub fn call_immediate_if_true(mem: &mut Memory, pc: &mut Register<u16>, sp: &mut
     }
 }
 
-pub fn add_u8_immediate(mem: &Memory, pc: &mut Register<u16>, reg: &mut Register<u8>, freg: &mut Register<Flags>, with_carry: bool) {
-    let val = u8_immediate(mem, pc);
-    add_internal(reg, val, freg, with_carry);
-}
+
 
 pub fn call(mem: &mut Memory, pc: &mut Register<u16>, sp: &mut Register<u16>, addr: u16) {
     push(mem, sp, pc.read());
@@ -597,12 +545,6 @@ pub fn sub_u8_immediate(mem: &Memory, pc: &mut Register<u16>, reg: &mut Register
 pub fn reti(mem: &Memory, pc: &mut Register<u16>, sp: &mut Register<u16>, ime: &mut bool) {
     ret(mem, pc, sp, true);
     *ime = true;
-}
-
-pub fn u8_immediate(mem: &Memory, pc: &mut Register<u16>) -> u8 {
-    let val = mem.read_byte(pc.read());
-    pc.increment();
-    return val;
 }
 
 pub fn u16_immediate(mem: &Memory, pc: &mut Register<u16>) -> u16 {
@@ -1499,42 +1441,7 @@ fn test_call() {
     assert!(mem.read_word(sp.read()) == 0x4324);
 }
 
-#[test]
-fn test_add_u8_immediate() {
-    let mut mem = EmptyMemory::new(0xFFFF);
-    let mut pc = Register::new(0x2736);
-    let mut reg = Register::new(0x05);
-    let mut freg = Register::new(Flags::empty());
-    mem.write_byte(pc.read(), 0x11);
 
-    add_u8_immediate(&mem, &mut pc, &mut reg, &mut freg, false);
-
-    assert!(pc.read() == 0x2737);
-    assert!(reg.read() == 0x16);
-    assert!(freg.read() == Flags::empty());
-
-    mem.write_byte(pc.read(), 0x0C);
-    add_u8_immediate(&mem, &mut pc, &mut reg, &mut freg, false);
-
-    assert!(pc.read() == 0x2738);
-    assert!(reg.read() == 0x22);
-    assert!(freg.read() == HalfCarryFlag);
-
-    mem.write_byte(pc.read(), 0x0F);
-    freg.write(CarryFlag);
-    add_u8_immediate(&mem, &mut pc, &mut reg, &mut freg, true);
-
-    assert!(pc.read() == 0x2739);
-    assert!(reg.read() == 0x32);
-    assert!(freg.read() == HalfCarryFlag);
-
-    mem.write_byte(pc.read(), 0x01);
-    reg.write(0xFF);
-    add_u8_immediate(&mem, &mut pc, &mut reg, &mut freg, false);
-    assert!(reg.read() == 0x00);
-    assert!(freg.read() == ZeroFlag);
-
-}
 
 #[test]
 fn test_push() {
