@@ -7,3 +7,10 @@ pub fn u8_immediate(mem: &Memory, pc: &mut Register<u16>) -> u8 {
     pc.increment();
     return val;
 }
+
+pub fn u16_immediate(mem: &Memory, pc: &mut Register<u16>) -> u16 {
+    let val = mem.read_word(pc.read());
+    pc.increment();
+    pc.increment();
+    return val;
+}
