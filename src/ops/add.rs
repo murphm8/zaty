@@ -125,6 +125,14 @@ pub fn increment_value_at_address(mem: &mut Memory, hb: u8, lb: u8, freg: &mut R
     mem.write_byte(addr, reg.read());
 }
 
+/// Increments the pair of registers as if they represent a 16-bit value
+pub fn increment_register_pair(msb: &mut Register<u8>,lsb: &mut Register<u8>) {
+    debug!("increment register pair");
+    let incremented_val = ((msb.read() as uint) << 8) + lsb.read() as uint + 1;
+    msb.write(high_byte(incremented_val as u16));
+    lsb.write(low_byte(incremented_val as u16));
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -352,25 +360,6 @@ mod tests {
 
         assert!(regc.read() == 0x00);
         assert!(freg.read() == HalfCarryFlag | ZeroFlag);
-    }
-
-
-    #[test]
-    fn test_write_value_to_memory_at_address_and_increment_register() {
-        let mut mem = EmptyMemory::new(0xFFFF);
-        let mut val = 0x8;
-        let mut high_byte = Register::new(0x12);
-        let mut low_byte = Register::new(0x34);
-
-        write_value_to_memory_at_address_and_increment_register(&mut mem, val, &mut high_byte, &mut low_byte);
-        assert!(low_byte.read() == 0x35, "Should increment register");
-        assert!(mem.read_byte(0x1234) == 0x8, "Should correctly write value");
-
-        low_byte.write(0xFF);
-        write_value_to_memory_at_address_and_increment_register(&mut mem, val, &mut high_byte, &mut low_byte);
-        assert!(mem.read_byte(0x12FF) == 0x8);
-        assert!(high_byte.read() == 0x13);
-        assert!(low_byte.read() == 0x00);
     }
 
     #[test]

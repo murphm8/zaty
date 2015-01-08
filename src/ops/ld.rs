@@ -277,4 +277,56 @@ mod tests {
 
         assert!(mem.read_byte(0xFF11) == val, "Memory does match what was written");
     }
+
+    #[test]
+    fn test_write_value_to_memory_at_address_and_increment_register() {
+        let mut mem = EmptyMemory::new(0xFFFF);
+        let mut val = 0x8;
+        let mut high_byte = Register::new(0x12);
+        let mut low_byte = Register::new(0x34);
+
+        write_value_to_memory_at_address_and_increment_register(&mut mem, val, &mut high_byte, &mut low_byte);
+        assert!(low_byte.read() == 0x35, "Should increment register");
+        assert!(mem.read_byte(0x1234) == 0x8, "Should correctly write value");
+
+        low_byte.write(0xFF);
+        write_value_to_memory_at_address_and_increment_register(&mut mem, val, &mut high_byte, &mut low_byte);
+        assert!(mem.read_byte(0x12FF) == 0x8);
+        assert!(high_byte.read() == 0x13);
+        assert!(low_byte.read() == 0x00);
+    }
+
+    #[test]
+    fn test_write_value_to_memory_at_address_and_decrement_register() {
+        let mut mem = EmptyMemory::new(0xFFFF);
+        let mut val = 0x8;
+        let mut high_byte = Register::new(0x12);
+        let mut low_byte = Register::new(0x34);
+
+        write_value_to_memory_at_address_and_decrement_register(&mut mem, val, &mut high_byte, &mut low_byte);
+        assert!(low_byte.read() == 0x33, "Should increment register");
+        assert!(mem.read_byte(0x1234) == 0x8, "Should correctly write value");
+
+        high_byte.write(0x11);
+        low_byte.write(0x00);
+        write_value_to_memory_at_address_and_decrement_register(&mut mem, val, &mut high_byte, &mut low_byte);
+        assert!(mem.read_byte(0x1100) == 0x8);
+        assert!(high_byte.read() == 0x10);
+        assert!(low_byte.read() == 0xFF);
+    }
+
+
+    #[test]
+    fn test_write_stack_pointer_to_address_immediate() {
+        let mut sp = Register::new(0xBEEF);
+        let mut pc = Register::new(0x111);
+        let mut mem = EmptyMemory::new(65647);
+
+        mem.write_byte(0x111, 0xAD);
+        mem.write_byte(0x112, 0xDE);
+
+        write_u16_immediate_address(&mut mem, &mut pc, sp.read());
+        assert!(pc.read() == 0x113);
+        assert!(mem.read_word(0xDEAD) == 0xBEEF);
+    }
 }

@@ -118,4 +118,14 @@ mod tests {
 
     }
 
+    #[test]
+    fn test_jp() {
+        let mut pc = Register::new(0x2311);
+        let addr = 0x1223;
+
+        jp(&mut pc, addr);
+
+        assert!(pc.read() == addr);
+    }
+
 }
