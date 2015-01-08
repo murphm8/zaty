@@ -1,3 +1,22 @@
+use memory::{EmptyMemory, Memory, pack_u16, high_byte, low_byte, low_nibble, high_nibble};
+use extensions::Incrementor;
+use cpu::{Register, Flags, CarryFlag, HalfCarryFlag, ZeroFlag, SubtractFlag};
+
+fn internal_sla(val: u8, freg: &mut Register<Flags>) -> u8 {
+    freg.write(Flags::empty());
+    let result = val << 1;
+
+    if result == 0 {
+        freg.write(ZeroFlag);
+    }
+
+    if val & 0x80 != 0 {
+        freg.write(CarryFlag);
+    }
+
+    return result;
+}
+
 fn internal_srl(val: u8, freg: &mut Register<Flags>) -> u8 {
     freg.write(Flags::empty());
     let result = val >> 1;
@@ -197,5 +216,47 @@ mod tests {
 
         assert!(regc.read() == 0b01100110);
         assert!(freg.read() == Flags::empty());
+    }
+
+    #[test]
+    fn test_srl_at_address() {
+        let mut mem = EmptyMemory::new(0xFFFF);
+        let mut freg = Register::new(HalfCarryFlag);
+        let mut val = 0x00;
+        let addr = 0x3727;
+        mem.write_byte(addr, val);
+        srl_at_address(&mut mem, addr, &mut freg);
+
+        assert!(freg.read() == ZeroFlag);
+        assert!(mem.read_byte(addr) == 0x00);
+
+        val = 0b00110011;
+        mem.write_byte(addr, val);
+        srl_at_address(&mut mem, addr, &mut freg);
+        assert!(mem.read_byte(addr) == 0b00011001);
+        assert!(freg.read() == CarryFlag);
+
+        srl_at_address(&mut mem, addr, &mut freg);
+        assert!(mem.read_byte(addr) == 0b00001100);
+        assert!(freg.read() == CarryFlag);
+    }
+
+    #[test]
+    fn test_srl() {
+        let mut reg = Register::new(0x00);
+        let mut freg = Register::new(HalfCarryFlag);
+        srl(&mut reg, &mut freg);
+
+        assert!(freg.read() == ZeroFlag);
+        assert!(reg.read() == 0x00);
+
+        reg.write(0b00110011);
+        srl(&mut reg, &mut freg);
+        assert!(reg.read() == 0b00011001);
+        assert!(freg.read() == CarryFlag);
+
+        srl(&mut reg, &mut freg);
+        assert!(reg.read() == 0b00001100);
+        assert!(freg.read() == CarryFlag);
     }
 }

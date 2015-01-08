@@ -94,6 +94,37 @@ pub fn add_register_pair_to_register_pair(rega: &mut Register<u8>, regb: &mut Re
     freg.write(flags);
 }
 
+/// Increment register by 1
+/// Set ZeroFlag if result is 0
+/// Set HalfCarryFlag if there is a carry from bit 3
+pub fn increment_register(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
+    let val = reg.read();
+    let mut flags = freg.read();
+    flags.remove(SubtractFlag);
+    flags.remove(HalfCarryFlag);
+    flags.remove(ZeroFlag);
+
+    if low_nibble(val) == 0xF {
+        flags.insert(HalfCarryFlag);
+    }
+    reg.increment();
+
+    if reg.read() == 0 {
+        flags.insert(ZeroFlag);
+    }
+    debug!("increment reg new_val: {:X}", reg.read());
+    freg.write(flags);
+}
+
+
+pub fn increment_value_at_address(mem: &mut Memory, hb: u8, lb: u8, freg: &mut Register<Flags>) {
+    let addr = pack_u16(hb, lb);
+    let val = mem.read_byte(addr);
+    let mut reg = Register::new(val);
+    increment_register(&mut reg, freg);
+    mem.write_byte(addr, reg.read());
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -276,4 +307,97 @@ mod tests {
         adc(&mut a, 0, &mut flags);
         assert!(flags.read() == ZeroFlag);
     }
+
+
+    #[test]
+    fn test_increment_register_pair() {
+        let mut msb = Register::new(0x11);
+        let mut lsb = Register::new(0x11);
+
+        increment_register_pair(&mut msb, &mut lsb);
+
+        assert!(msb.read() == 0x11);
+        assert!(lsb.read() == 0x12);
+
+        let mut msb_2 = Register::new(0x10);
+        let mut lsb_2 = Register::new(0xFF);
+
+        increment_register_pair(&mut msb_2, &mut lsb_2);
+
+        assert!(msb_2.read() == 0x11);
+        assert!(lsb_2.read() == 0x00);
+    }
+
+    #[test]
+    fn test_increment_register() {
+        let mut reg = Register::new(1);
+        let mut freg = Register::new(ZeroFlag | HalfCarryFlag);
+
+        increment_register(&mut reg, &mut freg);
+
+        assert!(reg.read() == 2);
+        assert!(freg.read() == Flags::empty());
+
+        let mut regb = Register::new(0x0F);
+
+        increment_register(&mut regb, &mut freg);
+
+        assert!(regb.read() == 0x10);
+        assert!(freg.read() == HalfCarryFlag);
+
+        let mut regc = Register::new(0xFF);
+        freg.write(Flags::empty());
+
+        increment_register(&mut regc, &mut freg);
+
+        assert!(regc.read() == 0x00);
+        assert!(freg.read() == HalfCarryFlag | ZeroFlag);
+    }
+
+
+    #[test]
+    fn test_write_value_to_memory_at_address_and_increment_register() {
+        let mut mem = EmptyMemory::new(0xFFFF);
+        let mut val = 0x8;
+        let mut high_byte = Register::new(0x12);
+        let mut low_byte = Register::new(0x34);
+
+        write_value_to_memory_at_address_and_increment_register(&mut mem, val, &mut high_byte, &mut low_byte);
+        assert!(low_byte.read() == 0x35, "Should increment register");
+        assert!(mem.read_byte(0x1234) == 0x8, "Should correctly write value");
+
+        low_byte.write(0xFF);
+        write_value_to_memory_at_address_and_increment_register(&mut mem, val, &mut high_byte, &mut low_byte);
+        assert!(mem.read_byte(0x12FF) == 0x8);
+        assert!(high_byte.read() == 0x13);
+        assert!(low_byte.read() == 0x00);
+    }
+
+    #[test]
+    fn test_increment_value_at_address() {
+        let mut mem = EmptyMemory::new(0xFFFF);
+        let mut freg = Register::new(CarryFlag);
+
+        increment_value_at_address(&mut mem, 0x10, 0x10, &mut freg);
+
+        assert!(mem.read_byte(0x1010) == 1);
+        assert!(freg.read() == CarryFlag);
+
+        mem.write_byte(0x01AB, 0x1F);
+
+        increment_value_at_address(&mut mem, 0x01, 0xAB, &mut freg);
+
+        assert!(mem.read_byte(0x01AB) == 0x20);
+        assert!(freg.read().contains(CarryFlag));
+        assert!(freg.read().contains(HalfCarryFlag));
+
+        freg.write(SubtractFlag);
+        mem.write_byte(0xABCD, 0xED);
+        increment_value_at_address(&mut mem, 0xAB, 0xCD, &mut freg);
+
+        assert!(mem.read_byte(0xABCD) == 0xEE);
+        assert!(freg.read() == Flags::empty());
+    }
+
+
 }

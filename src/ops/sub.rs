@@ -91,6 +91,43 @@ pub fn compare_value_at_address(mem: &Memory, reg: &mut Register<u8>, addr: u16,
     compare(reg, val, freg);
 }
 
+/// Decrement register by 1
+/// Set ZeroFlag if result is 0
+/// Set SubtractFlag
+/// Set HalfCarryFlag if there is no borrow from bit 4
+pub fn decrement_register(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
+    let val = reg.read();
+    let mut flags = freg.read() | SubtractFlag;
+    flags.remove(ZeroFlag);
+    flags.remove(HalfCarryFlag);
+
+    if (val & 0x0F) > 0 {
+        flags = flags | HalfCarryFlag;
+    }
+
+    reg.decrement();
+
+    if reg.read() == 0x00 {
+        flags = flags | ZeroFlag;
+    }
+    freg.write(flags);
+}
+
+pub fn decrement_register_pair(reg1: &mut Register<u8>, reg2: &mut Register<u8>) {
+    let val = pack_u16(reg1.read(), reg2.read());
+    let ans = val - 1;
+
+    reg1.write(high_byte(ans));
+    reg2.write(low_byte(ans));
+}
+
+pub fn decrement_value_at_address(mem: &mut Memory, hb: u8, lb: u8, freg: &mut Register<Flags>) {
+    let addr = pack_u16(hb, lb);
+    let val = mem.read_byte(addr);
+    let mut reg = Register::new(val);
+    decrement_register(&mut reg, freg);
+    mem.write_byte(addr, reg.read());
+}
 
 
 #[cfg(test)]
@@ -255,4 +292,91 @@ mod tests {
         assert!(reg.read() == 0x5A);
         assert!(freg.read() == SubtractFlag);
     }
+
+    #[test]
+    fn test_decrement_value_at_address() {
+        let mut mem = EmptyMemory::new(0xFFFF);
+        let mut freg = Register::new(CarryFlag);
+        mem.write_byte(0x1010, 1);
+
+        decrement_value_at_address(&mut mem, 0x10, 0x10, &mut freg);
+
+        assert!(mem.read_byte(0x1010) == 0);
+        assert!(freg.read().is_all());
+
+        mem.write_byte(0x01AB, 0x20);
+
+        decrement_value_at_address(&mut mem, 0x01, 0xAB, &mut freg);
+
+        assert!(mem.read_byte(0x01AB) == 0x1F);
+        assert!(freg.read() == CarryFlag | SubtractFlag);
+
+        freg.write(ZeroFlag);
+        mem.write_byte(0xABCD, 0xED);
+        decrement_value_at_address(&mut mem, 0xAB, 0xCD, &mut freg);
+
+        assert!(mem.read_byte(0xABCD) == 0xEC);
+        assert!(freg.read() == SubtractFlag | HalfCarryFlag);
+
+    }
+
+    #[test]
+    fn test_decrement_register_pair() {
+        let mut reg1 = Register::new(0x70);
+        let mut reg2 = Register::new(0x00);
+
+        decrement_register_pair(&mut reg1, &mut reg2);
+
+        assert!(reg1.read() == 0x6F);
+        assert!(reg2.read() == 0xFF);
+    }
+
+    #[test]
+    fn test_decrement_register() {
+        let mut reg = Register::new(1);
+        let mut freg = Register::new(Flags::empty());
+
+        decrement_register(&mut reg, &mut freg);
+
+        assert!(reg.read() == 0);
+        assert!(freg.read() == ZeroFlag | SubtractFlag | HalfCarryFlag);
+
+        reg.write(0xF1);
+        freg.write(Flags::empty());
+
+        decrement_register(&mut reg, &mut freg);
+
+        assert!(reg.read() == 0xF0);
+        assert!(freg.read() == SubtractFlag | HalfCarryFlag);
+
+        reg.write(0xF0);
+        freg.write(Flags::empty());
+
+        decrement_register(&mut reg, &mut freg);
+
+        assert!(reg.read() == 0xEF);
+        assert!(freg.read() == SubtractFlag);
+    }
+
+
+    #[test]
+    fn test_write_value_to_memory_at_address_and_decrement_register() {
+        let mut mem = EmptyMemory::new(0xFFFF);
+        let mut val = 0x8;
+        let mut high_byte = Register::new(0x12);
+        let mut low_byte = Register::new(0x34);
+
+        write_value_to_memory_at_address_and_decrement_register(&mut mem, val, &mut high_byte, &mut low_byte);
+        assert!(low_byte.read() == 0x33, "Should increment register");
+        assert!(mem.read_byte(0x1234) == 0x8, "Should correctly write value");
+
+        high_byte.write(0x11);
+        low_byte.write(0x00);
+        write_value_to_memory_at_address_and_decrement_register(&mut mem, val, &mut high_byte, &mut low_byte);
+        assert!(mem.read_byte(0x1100) == 0x8);
+        assert!(high_byte.read() == 0x10);
+        assert!(low_byte.read() == 0xFF);
+    }
+
+
 }
