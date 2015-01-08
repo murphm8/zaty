@@ -91,6 +91,8 @@ pub fn compare_value_at_address(mem: &Memory, reg: &mut Register<u8>, addr: u16,
     compare(reg, val, freg);
 }
 
+
+
 #[cfg(test)]
 mod tests {
     use super::*;

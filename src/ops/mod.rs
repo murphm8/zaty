@@ -9,6 +9,14 @@ pub use self::add::add_u8_immediate;
 pub use self::add::adc_value_at_address;
 pub use self::add::add_register_pair_to_register_pair;
 
+pub use self::boolean::and;
+pub use self::boolean::and_value_at_address;
+pub use self::boolean::complement;
+pub use self::boolean::or;
+pub use self::boolean::or_value_at_address;
+pub use self::boolean::xor;
+pub use self::boolean::xor_value_at_address;
+
 pub use self::ld::ld_reg_to_reg;
 pub use self::ld::ld_u8_immediate;
 pub use self::ld::ld_u8;
@@ -51,6 +59,7 @@ pub use self::utils::u8_immediate;
 pub use self::utils::u16_immediate;
 
 mod add;
+mod boolean;
 mod ld;
 mod sub;
 mod rotate;
@@ -152,15 +161,7 @@ pub fn relative_jmp_by_signed_immediate_if_true(mem: &Memory, pc: &mut Register<
     }
 }
 
-pub fn complement(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
-    let val = reg.read();
-    reg.write(!val);
 
-    let mut flags = freg.read();
-    flags.insert(HalfCarryFlag);
-    flags.insert(SubtractFlag);
-    freg.write(flags);
-}
 
 pub fn increment_value_at_address(mem: &mut Memory, hb: u8, lb: u8, freg: &mut Register<Flags>) {
     let addr = pack_u16(hb, lb);
@@ -193,69 +194,6 @@ pub fn ccf(freg: &mut Register<Flags>) {
 }
 
 
-
-
-
-pub fn and(reg: &mut Register<u8>, val: u8, freg: &mut Register<Flags>) {
-    let mut flags = HalfCarryFlag;
-
-    let result = reg.read() & val;
-
-    if result == 0 {
-        flags.insert(ZeroFlag);
-    }
-
-    reg.write(result);
-    freg.write(flags);
-}
-
-pub fn xor(reg: &mut Register<u8>, val: u8, freg: &mut Register<Flags>) {
-    let mut flags = Flags::empty();
-
-    let result = reg.read() ^ val;
-
-    if result == 0 {
-        flags.insert(ZeroFlag);
-    }
-
-    reg.write(result);
-    freg.write(flags);
-}
-
-pub fn and_value_at_address(mem: &Memory, reg: &mut Register<u8>, addr: u16, freg: &mut Register<Flags>) {
-    let val = mem.read_byte(addr);
-    and(reg, val, freg);
-}
-
-pub fn xor_value_at_address(mem: &Memory, reg: &mut Register<u8>, addr: u16, freg: &mut Register<Flags>) {
-    let val = mem.read_byte(addr);
-    xor(reg, val, freg);
-}
-
-pub fn or(reg: &mut Register<u8>, val: u8, freg: &mut Register<Flags>) {
-    let mut flags = Flags::empty();
-
-    let result = reg.read() | val;
-
-    if result == 0 {
-        flags.insert(ZeroFlag);
-    }
-
-    reg.write(result);
-    freg.write(flags);
-}
-
-pub fn or_value_at_address(mem: &Memory, reg: &mut Register<u8>, addr: u16, freg: &mut Register<Flags>) {
-    let val = mem.read_byte(addr);
-    or(reg, val, freg);
-}
-
-pub fn push(mem: &mut Memory, sp: &mut Register<u16>, val: u16) {
-    sp.decrement();
-    sp.decrement();
-    debug!("push sp:{:X} val:{:X}", sp.read(), val);
-    mem.write_word(sp.read(), val);
-}
 
 fn pop_internal(mem: &Memory, sp: &mut Register<u16>) -> u16 {
     let val = mem.read_word(sp.read());
@@ -292,6 +230,13 @@ pub fn jp_u16_immediate_if_true(mem: &Memory,pc: &mut Register<u16>, should_jump
         pc.increment();
         pc.increment();
     }
+}
+
+pub fn push(mem: &mut Memory, sp: &mut Register<u16>, val: u16) {
+    sp.decrement();
+    sp.decrement();
+    debug!("push sp:{:X} val:{:X}", sp.read(), val);
+    mem.write_word(sp.read(), val);
 }
 
 pub fn call_immediate_if_true(mem: &mut Memory, pc: &mut Register<u16>, sp: &mut Register<u16>, should_jump: bool) {
@@ -483,10 +428,6 @@ pub fn pop_flags(mem: &Memory, sp: &mut Register<u16>, a: &mut Register<u8>, f: 
     f.write(Flags::from_bits_truncate(low_byte(val)));
 }
 
-
-
-
-
 #[test]
 fn test_pop_flags() {
     let mut a = Register::new(0x00);
@@ -578,135 +519,7 @@ fn test_swap() {
     assert!(freg.read() == Flags::empty());
 }
 
-#[test]
-fn test_sra_at_address() {
-    let mut val = 0b10010001;
-    let mut freg = Register::new(Flags::empty());
-    let mut mem = EmptyMemory::new(0xFFFF);
-    let addr = 0x2372;
 
-    mem.write_byte(addr, val);
-    sra_at_address(&mut mem, addr, &mut freg);
-
-    assert!(mem.read_byte(addr) == 0b11001000);
-    assert!(freg.read() == CarryFlag);
-
-    sra_at_address(&mut mem, addr, &mut freg);
-
-    assert!(mem.read_byte(addr) == 0b11100100);
-    assert!(freg.read() == Flags::empty());
-
-    mem.write_byte(addr, 0x00);
-    sra_at_address(&mut mem, addr, &mut freg);
-    assert!(mem.read_byte(addr) == 0x00);
-    assert!(freg.read() == ZeroFlag);
-
-    mem.write_byte(addr, 0b00001111);
-    sra_at_address(&mut mem, addr, &mut freg);
-    assert!(mem.read_byte(addr) == 0b00000111);
-    assert!(freg.read() == CarryFlag);
-
-}
-
-#[test]
-fn test_sra() {
-    let mut reg = Register::new(0b10010001);
-    let mut freg = Register::new(Flags::empty());
-
-    sra(&mut reg, &mut freg);
-
-    assert!(reg.read() == 0b11001000);
-    assert!(freg.read() == CarryFlag);
-
-    sra(&mut reg, &mut freg);
-
-    assert!(reg.read() == 0b11100100);
-    assert!(freg.read() == Flags::empty());
-
-    reg.write(0x00);
-    sra(&mut reg, &mut freg);
-    assert!(reg.read() == 0x00);
-    assert!(freg.read() == ZeroFlag);
-
-    reg.write(0b00001111);
-    sra(&mut reg, &mut freg);
-    assert!(reg.read() == 0b00000111);
-    assert!(freg.read() == CarryFlag);
-
-}
-
-#[test]
-fn test_sla_at_address() {
-    let mut val = 0b00001111;
-    let mut mem = EmptyMemory::new(0xFFFF);
-    let addr = 0x1423;
-    let mut freg = Register::new(SubtractFlag | HalfCarryFlag);
-
-    mem.write_byte(addr, val);
-    sla_at_address(&mut mem, addr, &mut freg);
-
-    // Rotate should happen
-    assert!(mem.read_byte(addr) == 0b00011110);
-    assert!(freg.read() == Flags::empty());
-
-    mem.write_byte(addr, 0x00);
-
-    sla_at_address(&mut mem, addr, &mut freg);
-
-    // Zero should return zero with ZeroFlag
-    assert!(mem.read_byte(addr) == 0x00);
-    assert!(freg.read() == ZeroFlag);
-
-    mem.write_byte(addr, 0b11001100);
-
-    sla_at_address(&mut mem, addr, &mut freg);
-
-    // Carry should get set
-    assert!(mem.read_byte(addr) == 0b10011000);
-    assert!(freg.read() == CarryFlag);
-
-    freg.write(CarryFlag);
-    mem.write_byte(addr, 0b11001100);
-
-    sla_at_address(&mut mem, addr, &mut freg);
-
-    // Carry should get set
-    assert!(mem.read_byte(addr) == 0b10011000);
-    assert!(freg.read() == CarryFlag);
-}
-
-#[test]
-fn test_sla() {
-    let mut reg = Register::new(0b00001111);
-    let mut freg = Register::new(SubtractFlag | HalfCarryFlag);
-
-    sla(&mut reg, &mut freg);
-
-    // Rotate should happen
-    assert!(reg.read() == 0b00011110);
-    assert!(freg.read() == Flags::empty());
-
-    let mut regb = Register::new(0x00);
-
-    sla(&mut regb, &mut freg);
-
-    // Zero should return zero with ZeroFlag
-    assert!(regb.read() == 0x00);
-    assert!(freg.read() == ZeroFlag);
-
-    let mut regc = Register::new(0b11001100);
-    freg.write(CarryFlag);
-    sla(&mut regc, &mut freg);
-
-    assert!(regc.read() == 0b10011000);
-    assert!(freg.read() == CarryFlag);
-
-    regc.write(0b00110011);
-    sla(&mut regc, &mut freg);
-
-    assert!(regc.read() == 0b01100110);
-    assert!(freg.read() == Flags::empty());
-}
 
 #[test]
 fn test_set_at_addr() {
@@ -1146,24 +959,6 @@ fn test_write_value_to_memory_at_address_and_decrement_register() {
     assert!(mem.read_byte(0x1100) == 0x8);
     assert!(high_byte.read() == 0x10);
     assert!(low_byte.read() == 0xFF);
-}
-
-#[test]
-fn test_complement() {
-    let mut a = Register::new(0x11);
-    let mut freg = Register::new(ZeroFlag | CarryFlag);
-
-    complement(&mut a, &mut freg);
-
-    assert!(a.read() == !0x11);
-    assert!(freg.read().is_all());
-
-    freg.write(Flags::empty());
-    complement(&mut a, &mut freg);
-
-    assert!(a.read() == 0x11);
-    assert!(freg.read().contains(HalfCarryFlag));
-    assert!(freg.read().contains(SubtractFlag));
 }
 
 #[test]
