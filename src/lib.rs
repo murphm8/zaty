@@ -1,7 +1,4 @@
-#![feature(macro_rules)]
-#![feature(globs)]
-#![feature(phase)]
-#[phase(plugin, link)] extern crate log;
+#[macro_use] extern crate log;
 
 mod ops;
 mod extensions;
