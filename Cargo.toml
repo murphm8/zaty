@@ -7,3 +7,9 @@ authors = ["Matt Murphy <matthew.john.murphy@gmail.com>"]
 [[bin]]
 name = "zaty"
 path = "src/main.rs"
+
+[dependencies]
+log = "0.3"
+env_logger = "0.3"
+bitflags = "0.1"
+num = "*"

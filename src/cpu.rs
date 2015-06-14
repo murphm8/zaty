@@ -1,9 +1,9 @@
 use memory::{Memory, low_nibble, high_nibble, low_byte, high_byte, pack_u16};
 use extensions::Incrementor;
 use ops::{self};
-use std::num::{UnsignedInt, Int};
+use num::{Unsigned, Signed};
 
-// TODO: Don't use registers, use straight uints
+// TODO: Don't use registers, use straight usizes
 // TODO: Return tuples to set the registers for a more purely functional paradigm of opcodes
 // TODO: Rename functions to be more standard opscode_memsize_immediate_address
 macro_rules! opcode(
@@ -678,15 +678,15 @@ impl<T: Copy> Register<T> {
 }
 
 
-impl<T: Copy + UnsignedInt>  Register<T> {
+impl<T: Copy + Unsigned>  Register<T> {
     pub fn increment(&mut self) {
         let i = self.val;
-        self.write(i + Int::one());
+        self.write(i + T::one());
     }
 
     pub fn decrement(&mut self) {
         let i = self.val;
-        self.write(i - Int::one());
+        self.write(i - T::one());
     }
 }
 

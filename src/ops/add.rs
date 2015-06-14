@@ -128,7 +128,7 @@ pub fn increment_value_at_address(mem: &mut Memory, hb: u8, lb: u8, freg: &mut R
 /// Increments the pair of registers as if they represent a 16-bit value
 pub fn increment_register_pair(msb: &mut Register<u8>,lsb: &mut Register<u8>) {
     debug!("increment register pair");
-    let incremented_val = ((msb.read() as uint) << 8) + lsb.read() as uint + 1;
+    let incremented_val = ((msb.read() as usize) << 8) + lsb.read() as usize + 1;
     msb.write(high_byte(incremented_val as u16));
     lsb.write(low_byte(incremented_val as u16));
 }

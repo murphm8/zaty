@@ -77,7 +77,7 @@ pub fn bit(reg_val: u8, pos: u8, freg: &mut Register<Flags>) {
 
     assert!(pos < 8, "Bit positions are 0-7");
 
-    let mask = 0x01 << pos as uint;
+    let mask = 0x01 << pos as usize;
     let result = reg_val & mask;
 
     if result == 0 {
@@ -93,28 +93,28 @@ pub fn byte_at_address(mem: &Memory, addr: u16) -> u8 {
 }
 
 pub fn res(reg: &mut Register<u8>, pos: u8) {
-    let mask = 0x01 << pos as uint;
+    let mask = 0x01 << pos as usize;
     let val = reg.read();
     let reset_val = val & (!mask);
     reg.write(reset_val);
 }
 
 pub fn res_at_addr(mem: &mut Memory, address: u16, pos: u8) {
-    let mask = 0x01 << pos as uint;
+    let mask = 0x01 << pos as usize;
     let val = mem.read_byte(address);
     let reset_val = val & (!mask);
     mem.write_byte(address, reset_val);
 }
 
 pub fn set(reg: &mut Register<u8>, pos: u8) {
-    let mask = 0x01 << pos as uint;
+    let mask = 0x01 << pos as usize;
     let val = reg.read();
     let reset_val = val | mask;
     reg.write(reset_val);
 }
 
 pub fn set_at_addr(mem: &mut Memory, address: u16, pos: u8) {
-    let mask = 0x01 << pos as uint;
+    let mask = 0x01 << pos as usize;
     let val = mem.read_byte(address);
     let reset_val = val | mask;
     mem.write_byte(address, reset_val);

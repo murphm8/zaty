@@ -1,6 +1,6 @@
-use std::rand;
-use std::iter::range_inclusive;
-use std::iter::range_step_inclusive;
+use rand;
+use num::iter::range_inclusive;
+use num::iter::range_step_inclusive;
 use std::path::Path;
 use std::iter::repeat;
 
@@ -16,7 +16,7 @@ pub struct EmptyMemory {
 }
 
 impl EmptyMemory {
-    pub fn new(size: uint) -> EmptyMemory {
+    pub fn new(size: usize) -> EmptyMemory {
         let mut mem = repeat(0).take(size).collect();
         return EmptyMemory{ mem: mem }
     }
@@ -24,22 +24,22 @@ impl EmptyMemory {
 
 impl Memory for EmptyMemory {
     fn read_byte(&self, addr: u16) -> u8 {
-        return self.mem[addr as uint];
+        return self.mem[addr as usize];
     }
 
     fn read_word(&self, addr: u16) -> u16 {
-        let high_byte = self.mem[(addr as uint) + 1];
-        let low_byte = self.mem[addr as uint];
+        let high_byte = self.mem[(addr as usize) + 1];
+        let low_byte = self.mem[addr as usize];
         return ((high_byte as u16) << 8) + (low_byte as u16);
     }
 
     fn write_byte(&mut self, addr: u16, data: u8) {
-        self.mem[addr as uint] = data;
+        self.mem[addr as usize] = data;
     }
 
     fn write_word(&mut self, addr: u16, data: u16) {
-        self.mem[addr as uint] = low_byte(data);
-        self.mem[(addr as uint) + 1] = high_byte(data);
+        self.mem[addr as usize] = low_byte(data);
+        self.mem[(addr as usize) + 1] = high_byte(data);
     }
 }
 
@@ -61,33 +61,33 @@ pub struct GameboyMemory {
 impl Memory for GameboyMemory {
 
     fn read_byte(&self, addr: u16) -> u8 {
-        return self.read_internal(addr as uint);
+        return self.read_internal(addr as usize);
     }
 
     fn read_word(&self, addr: u16) -> u16 {
-        let high_byte = self.read_internal((addr + 1) as uint);
-        let low_byte = self.read_internal(addr as uint);
+        let high_byte = self.read_internal((addr + 1) as usize);
+        let low_byte = self.read_internal(addr as usize);
         return ((high_byte as u16) << 8) + (low_byte as u16);
     }
 
     fn write_byte(&mut self, addr: u16, data: u8) {
-        self.write_internal(addr as uint, data);
+        self.write_internal(addr as usize, data);
     }
 
     fn write_word(&mut self, addr: u16, data: u16) {
-        self.write_internal(addr as uint, low_byte(data));
-        self.write_internal((addr as uint) + 1, high_byte(data));
+        self.write_internal(addr as usize, low_byte(data));
+        self.write_internal((addr as usize) + 1, high_byte(data));
     }
 }
 
 impl GameboyMemory {
-    pub fn new(size: uint) -> GameboyMemory {
+    pub fn new(size: usize) -> GameboyMemory {
         let mut mem = repeat(0).take(size).collect();
         return GameboyMemory{ mem: mem, rom: include_bytes!("bin_tests/06-ld r,r.gb"), rom_bank: 1,
         external_ram_enable: false, banking_mode: RomBankingMode }
     }
 
-    fn write_internal(&mut self, addr: uint, val: u8) {
+    fn write_internal(&mut self, addr: usize, val: u8) {
         match addr {
             0x0000...0x1FFF => {
                 return;
@@ -109,7 +109,7 @@ impl GameboyMemory {
         }
     }
 
-    fn read_internal(&self, addr: uint) -> u8 {
+    fn read_internal(&self, addr: usize) -> u8 {
         match addr {
             0x0000...0x00FF => {
                 debug!("Restart and Interrupt Vectors");
@@ -125,7 +125,7 @@ impl GameboyMemory {
             },
             0x4000...0x7FFF => {
                 debug!("ROM Bank {}", self.rom_bank);
-                let translated_addr = addr + (0x4000 * (self.rom_bank as uint - 1));
+                let translated_addr = addr + (0x4000 * (self.rom_bank as usize - 1));
                 return self.rom[translated_addr];
             },
             0x8000...0x97FF => {
@@ -240,7 +240,7 @@ fn test_emptymemory_write_byte() {
     {
         let num = rand::random();
         memory.write_byte(n, num);
-        assert!(memory.mem[n as uint] == num);
+        assert!(memory.mem[n as usize] == num);
     }
 }
 
@@ -252,8 +252,8 @@ fn test_emptymemory_write_word() {
     {
         let num = rand::random();
         memory.write_word(n, num);
-        assert!(memory.mem[n as uint] == low_byte(num));
-        assert!(memory.mem[(n + 1) as uint] == high_byte(num));
+        assert!(memory.mem[n as usize] == low_byte(num));
+        assert!(memory.mem[(n + 1) as usize] == high_byte(num));
     }
 }
 

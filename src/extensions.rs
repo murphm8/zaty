@@ -1,12 +1,12 @@
 use std::cell::Cell;
-use std::num::{Int};
+use num::{Signed};
 
 pub trait Incrementor {
     fn increment(&self);
 }
 
-impl<T: Copy + Int> Incrementor for Cell<T> {
+impl<T: Copy + Signed> Incrementor for Cell<T> {
     fn increment(&self) {
-        self.set(self.get() + Int::one());
+        self.set(self.get() + T::one());
     }
 }
