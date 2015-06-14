@@ -1,5 +1,5 @@
-#![feature(rand)]
 #![feature(box_syntax)]
+#![feature(negate_unsigned)]
 #[macro_use]
 extern crate bitflags;
 #[macro_use]

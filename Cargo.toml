@@ -1,5 +1,4 @@
 [package]
-
 name = "zaty"
 version = "0.0.1"
 authors = ["Matt Murphy <matthew.john.murphy@gmail.com>"]
@@ -13,3 +12,4 @@ log = "0.3"
 env_logger = "0.3"
 bitflags = "0.1"
 num = "*"
+rand = "*"
