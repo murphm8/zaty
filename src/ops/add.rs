@@ -18,12 +18,12 @@ fn carry_for_add(val1: u8, val2: u8, with_carry: bool) -> bool {
 fn add_internal(first: &mut Register<u8>, second: u8, freg: &mut Register<Flags>, with_carry: bool) {
     let val1 = first.read();
     let val2 = second;
-    let mut result = val1 + val2;
+    let mut result = val1.wrapping_add(val2);
     let mut do_carry = false;
 
     if freg.read().contains(CarryFlag) && with_carry {
         do_carry = true;
-        result += 1;
+        result = result.wrapping_add(1);
     }
 
     let mut flags = Flags::empty();
@@ -73,7 +73,7 @@ pub fn add_register_pair_to_register_pair(rega: &mut Register<u8>, regb: &mut Re
     let first = pack_u16(rega.read(), regb.read());
     let second = pack_u16(reg1, reg2);
 
-    let sum = first + second;
+    let sum = first.wrapping_add(second);
 
     // Reset subtract flag, leave ZeroFlag alone
     let mut flags = freg.read();
@@ -128,7 +128,7 @@ pub fn increment_value_at_address(mem: &mut Memory, hb: u8, lb: u8, freg: &mut R
 /// Increments the pair of registers as if they represent a 16-bit value
 pub fn increment_register_pair(msb: &mut Register<u8>,lsb: &mut Register<u8>) {
     debug!("increment register pair");
-    let incremented_val = ((msb.read() as usize) << 8) + lsb.read() as usize + 1;
+    let incremented_val = ((msb.read() as usize) << 8).wrapping_add((lsb.read() as usize).wrapping_add(1));
     msb.write(high_byte(incremented_val as u16));
     lsb.write(low_byte(incremented_val as u16));
 }
@@ -292,7 +292,7 @@ mod tests {
         let mut flags = Register::new(SubtractFlag | CarryFlag);
 
         adc(&mut first, 0x0A, &mut flags);
-        assert!(first.read() == 0x10, "Expected: {}, Actual: {}", "16", first.read());
+        assert!(first.read() == 0x10, "Expected: {}, Actual: {}", 0x10, first.read());
         assert!(flags.read() == HalfCarryFlag, "HalfCarry should be set");
 
         flags.write(CarryFlag);

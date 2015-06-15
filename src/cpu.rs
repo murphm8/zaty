@@ -678,15 +678,27 @@ impl<T: Copy> Register<T> {
 }
 
 
-impl<T: Copy + Unsigned>  Register<T> {
+impl Register<u8> {
     pub fn increment(&mut self) {
         let i = self.val;
-        self.write(i + T::one());
+        self.write(i.wrapping_add(1));
     }
 
     pub fn decrement(&mut self) {
         let i = self.val;
-        self.write(i - T::one());
+        self.write(i - 1);
+    }
+}
+
+impl Register<u16> {
+    pub fn increment(&mut self) {
+        let i = self.val;
+        self.write(i.wrapping_add(1));
+    }
+
+    pub fn decrement(&mut self) {
+        let i = self.val;
+        self.write(i - 1);
     }
 }
 
