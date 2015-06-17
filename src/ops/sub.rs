@@ -4,12 +4,7 @@ use cpu::{Register, Flags, CarryFlag, HalfCarryFlag, ZeroFlag, SubtractFlag};
 use ops::u8_immediate;
 
 fn half_carry_for_subtract(val1: u8, val2: u8, carry: u8) -> bool {
-    if low_nibble(val2) + carry == 0x10 && val1 >= 0x10 {
-        return true;
-    } else {
-        return low_nibble(val1) >= (low_nibble(val2) + carry);
-    }
-
+    return (low_nibble(val2) + carry) > low_nibble(val1);
 }
 
 pub fn sub_u8_immediate(mem: &Memory, pc: &mut Register<u16>, reg: &mut Register<u8>, freg: &mut Register<Flags>, with_carry: bool) {
@@ -18,7 +13,7 @@ pub fn sub_u8_immediate(mem: &Memory, pc: &mut Register<u16>, reg: &mut Register
 }
 
 fn carry_for_subtract(val1: u8, val2: u8, carry: u8) -> bool {
-    return val1 as u16 >= (val2 as u16 + carry as u16);
+    return (val2 as u16 + carry as u16) > val1 as u16 ;
 }
 
 pub fn internal_sub(reg: &mut Register<u8>, val: u8, freg: &mut Register<Flags>, with_carry: bool) {
@@ -91,26 +86,8 @@ pub fn compare_value_at_address(mem: &Memory, reg: &mut Register<u8>, addr: u16,
     compare(reg, val, freg);
 }
 
-/// Decrement register by 1
-/// Set ZeroFlag if result is 0
-/// Set SubtractFlag
-/// Set HalfCarryFlag if there is no borrow from bit 4
 pub fn decrement_register(reg: &mut Register<u8>, freg: &mut Register<Flags>) {
-    let val = reg.read();
-    let mut flags = freg.read() | SubtractFlag;
-    flags.remove(ZeroFlag);
-    flags.remove(HalfCarryFlag);
-
-    if (val & 0x0F) > 0 {
-        flags = flags | HalfCarryFlag;
-    }
-
-    reg.decrement();
-
-    if reg.read() == 0x00 {
-        flags = flags | ZeroFlag;
-    }
-    freg.write(flags);
+    internal_sub(reg, 1, freg, false);
 }
 
 pub fn decrement_register_pair(reg1: &mut Register<u8>, reg2: &mut Register<u8>) {
@@ -149,14 +126,14 @@ mod tests {
 
         assert!(pc.read() == 0x2737);
         assert!(reg.read() == 0x24);
-        assert!(freg.read() == SubtractFlag | HalfCarryFlag | CarryFlag);
+        assert!(freg.read() == SubtractFlag);
 
         mem.write_byte(pc.read(), 0x0C);
         sub_u8_immediate(&mem, &mut pc, &mut reg, &mut freg, false);
 
         assert!(pc.read() == 0x2738);
         assert!(reg.read() == 0x18);
-        assert!(freg.read() == SubtractFlag | CarryFlag);
+        assert!(freg.read() == SubtractFlag | HalfCarryFlag);
 
         mem.write_byte(pc.read(), 0x0F);
         freg.write(CarryFlag);
@@ -164,8 +141,7 @@ mod tests {
 
         assert!(pc.read() == 0x2739);
         assert!(reg.read() == 0x08);
-        assert!(freg.read() == SubtractFlag | CarryFlag | HalfCarryFlag);
-
+        assert!(freg.read() == SubtractFlag | HalfCarryFlag);
     }
 
     #[test]
@@ -176,13 +152,13 @@ mod tests {
 
         compare(&mut reg, val, &mut freg);
         assert!(reg.read() == 0xAA);
-        assert!(freg.read() == SubtractFlag);
+        assert!(freg.read() == SubtractFlag | HalfCarryFlag | CarryFlag);
 
         reg.write(0xF0);
         val = 0xF0;
         compare(&mut reg, val, &mut freg);
         assert!(reg.read() == 0xF0);
-        assert!(freg.read() == SubtractFlag | CarryFlag | HalfCarryFlag | ZeroFlag);
+        assert!(freg.read() == SubtractFlag | ZeroFlag);
     }
 
     #[test]
@@ -196,13 +172,19 @@ mod tests {
 
         compare_value_at_address(&mem, &mut reg, addr, &mut freg);
         assert!(reg.read() == 0xBA);
-        assert!(freg.read() == SubtractFlag | CarryFlag);
+        assert!(freg.read() == SubtractFlag | HalfCarryFlag);
 
         mem.write_byte(addr, 0xCD);
         reg.write(0xCD);
         compare_value_at_address(&mem, &mut reg, addr, &mut freg);
         assert!(reg.read() == 0xCD);
-        assert!(freg.read() == SubtractFlag | ZeroFlag | HalfCarryFlag | CarryFlag);
+        assert!(freg.read() == SubtractFlag | ZeroFlag);
+        
+        mem.write_byte(addr, 0xCD);
+        reg.write(0xCF);
+        compare_value_at_address(&mem, &mut reg, addr, &mut freg);
+        assert!(reg.read() == 0xCD);
+        assert!(freg.read() == SubtractFlag | ZeroFlag | CarryFlag | HalfCarryFlag);
 
     }
 
@@ -216,7 +198,7 @@ mod tests {
 
         sbc_value_at_address(&mem, &mut reg, addr, &mut freg);
         assert!(reg.read() == 0x31);
-        assert!(freg.read() == SubtractFlag | CarryFlag | HalfCarryFlag);
+        assert!(freg.read() == SubtractFlag);
     }
 
     #[test]
@@ -229,7 +211,7 @@ mod tests {
 
         sub_value_at_address(&mem, &mut reg, addr, &mut freg);
         assert!(reg.read() == 0x32);
-        assert!(freg.read() == SubtractFlag | CarryFlag | HalfCarryFlag);
+        assert!(freg.read() == SubtractFlag);
     }
 
     #[test]
@@ -237,27 +219,27 @@ mod tests {
         let mut reg = Register::new(0xFF);
         let mut freg = Register::new(Flags::empty());
 
-        sbc(&mut reg, 0x0f, &mut freg);
+        sbc(&mut reg, 0x0F, &mut freg);
         assert!(reg.read() == 0xF0);
-        assert!(freg.read() == SubtractFlag | HalfCarryFlag | CarryFlag);
+        assert!(freg.read() == SubtractFlag);
 
         reg.write(0xFF);
         freg.write(CarryFlag);
-        sbc(&mut reg, 0x0f, &mut freg);
+        sbc(&mut reg, 0x0F, &mut freg);
         assert!(reg.read() == 0xEF);
-        assert!(freg.read() == SubtractFlag | HalfCarryFlag | CarryFlag);
+        assert!(freg.read() == SubtractFlag | HalfCarryFlag);
 
         reg.write(0xFF);
         freg.write(CarryFlag);
         sbc(&mut reg, 0xFF, &mut freg);
         assert!(reg.read() == 0xFF);
-        assert!(freg.read() == SubtractFlag | HalfCarryFlag);
+        assert!(freg.read() == SubtractFlag | HalfCarryFlag | CarryFlag);
 
         reg.write(0xAB);
         freg.write(CarryFlag);
         sbc(&mut reg, 0x12, &mut freg);
         assert!(reg.read() == 0x98);
-        assert!(freg.read() == SubtractFlag | CarryFlag | HalfCarryFlag);
+        assert!(freg.read() == SubtractFlag);
     }
 
     #[test]
@@ -265,32 +247,30 @@ mod tests {
         let mut reg = Register::new(0xFF);
         let mut freg = Register::new(Flags::empty());
 
-        sub(&mut reg, 0x0f, &mut freg);
+        sub(&mut reg, 0x0F, &mut freg);
         assert!(reg.read() == 0xF0);
-        assert!(freg.read() == SubtractFlag | HalfCarryFlag | CarryFlag);
+        assert!(freg.read() == SubtractFlag);
 
         reg.write(0x11);
         sub(&mut reg, 0x11, &mut freg);
         assert!(reg.read() == 0);
         assert!(freg.read().contains(SubtractFlag));
         assert!(freg.read().contains(ZeroFlag));
-        assert!(freg.read().contains(CarryFlag));
-        assert!(freg.read().contains(HalfCarryFlag));
 
         reg.write(0xA0);
         sub(&mut reg, 0xB0, &mut freg);
         assert!(reg.read() == 0xF0);
-        assert!(freg.read() == SubtractFlag | HalfCarryFlag);
-
-        reg.write(0x80);
-        sub(&mut reg, 0x0f, &mut freg);
-        assert!(reg.read() == 0x71);
         assert!(freg.read() == SubtractFlag | CarryFlag);
 
-        reg.write(0x05);
+        reg.write(0x80);
+        sub(&mut reg, 0x0F, &mut freg);
+        assert!(reg.read() == 0x71);
+        assert!(freg.read() == SubtractFlag | HalfCarryFlag);
+
+        reg.write(0xE5);
         sub(&mut reg, 0xAB, &mut freg);
-        assert!(reg.read() == 0x5A);
-        assert!(freg.read() == SubtractFlag);
+        assert!(reg.read() == 0x3A);
+        assert!(freg.read() == SubtractFlag | HalfCarryFlag);
     }
 
     #[test]
@@ -309,14 +289,14 @@ mod tests {
         decrement_value_at_address(&mut mem, 0x01, 0xAB, &mut freg);
 
         assert!(mem.read_byte(0x01AB) == 0x1F);
-        assert!(freg.read() == CarryFlag | SubtractFlag);
+        assert!(freg.read() == SubtractFlag);
 
         freg.write(ZeroFlag);
         mem.write_byte(0xABCD, 0xED);
         decrement_value_at_address(&mut mem, 0xAB, 0xCD, &mut freg);
 
         assert!(mem.read_byte(0xABCD) == 0xEC);
-        assert!(freg.read() == SubtractFlag | HalfCarryFlag);
+        assert!(freg.read() == SubtractFlag);
 
     }
 
@@ -339,7 +319,13 @@ mod tests {
         decrement_register(&mut reg, &mut freg);
 
         assert!(reg.read() == 0);
-        assert!(freg.read() == ZeroFlag | SubtractFlag | HalfCarryFlag);
+        assert!(freg.read() == ZeroFlag | SubtractFlag);
+        
+        reg.write(0x0);
+        decrement_register(&mut reg, &mut freg);
+
+        assert!(reg.read() == 255);
+        assert!(freg.read() == ZeroFlag | SubtractFlag | CarryFlag | HalfCarryFlag);
 
         reg.write(0xF1);
         freg.write(Flags::empty());
@@ -347,7 +333,7 @@ mod tests {
         decrement_register(&mut reg, &mut freg);
 
         assert!(reg.read() == 0xF0);
-        assert!(freg.read() == SubtractFlag | HalfCarryFlag);
+        assert!(freg.read() == SubtractFlag);
 
         reg.write(0xF0);
         freg.write(Flags::empty());
