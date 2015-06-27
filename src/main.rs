@@ -17,6 +17,7 @@ use memory::GameboyMemory;
 use cpu::Cpu;
 
 fn main() {
+    env_logger::init().unwrap();
     let mut memory = Box::new(GameboyMemory::new(0x10000));
     let mut cpu = Cpu::new(memory);
 
