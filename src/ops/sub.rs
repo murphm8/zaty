@@ -13,7 +13,7 @@ pub fn sub_u8_immediate(mem: &Memory, pc: &mut Register<u16>, reg: &mut Register
 }
 
 fn carry_for_subtract(val1: u8, val2: u8, carry: u8) -> bool {
-    return (val2 as u16 + carry as u16) > val1 as u16 ;
+    return (val2 as u16 + carry as u16) > val1 as u16;
 }
 
 pub fn internal_sub(reg: &mut Register<u8>, val: u8, freg: &mut Register<Flags>, with_carry: bool) {
@@ -63,22 +63,8 @@ pub fn sbc_value_at_address(mem: &Memory, reg: &mut Register<u8>, addr: u16, fre
 }
 
 pub fn compare(reg: &mut Register<u8>, val: u8, freg: &mut Register<Flags>) {
-    let reg_val = reg.read();
-    let mut flags = SubtractFlag;
-    let mut carry = 0;
-
-    if half_carry_for_subtract(reg_val, val, carry) {
-        flags.insert(HalfCarryFlag);
-    }
-
-    if carry_for_subtract(reg_val, val, carry) {
-        flags.insert(CarryFlag);
-    }
-
-    if (reg_val == val) {
-        flags.insert(ZeroFlag);
-    }
-    freg.write(flags);
+    let mut reg_val = Register::new(reg.read());
+    internal_sub(&mut reg_val, val, freg, false);
 }
 
 pub fn compare_value_at_address(mem: &Memory, reg: &mut Register<u8>, addr: u16, freg: &mut Register<Flags>) {
@@ -179,13 +165,12 @@ mod tests {
         compare_value_at_address(&mem, &mut reg, addr, &mut freg);
         assert!(reg.read() == 0xCD);
         assert!(freg.read() == SubtractFlag | ZeroFlag);
-        
+
         mem.write_byte(addr, 0xCD);
         reg.write(0xCF);
         compare_value_at_address(&mem, &mut reg, addr, &mut freg);
-        assert!(reg.read() == 0xCD);
-        assert!(freg.read() == SubtractFlag | ZeroFlag | CarryFlag | HalfCarryFlag);
-
+        assert!(reg.read() == 0xCF);
+        assert!(freg.read() == SubtractFlag);
     }
 
     #[test]
@@ -282,14 +267,14 @@ mod tests {
         decrement_value_at_address(&mut mem, 0x10, 0x10, &mut freg);
 
         assert!(mem.read_byte(0x1010) == 0);
-        assert!(freg.read().is_all());
+        assert!(freg.read() == SubtractFlag | ZeroFlag);
 
         mem.write_byte(0x01AB, 0x20);
 
         decrement_value_at_address(&mut mem, 0x01, 0xAB, &mut freg);
 
         assert!(mem.read_byte(0x01AB) == 0x1F);
-        assert!(freg.read() == SubtractFlag);
+        assert!(freg.read() == SubtractFlag | HalfCarryFlag);
 
         freg.write(ZeroFlag);
         mem.write_byte(0xABCD, 0xED);
@@ -320,12 +305,12 @@ mod tests {
 
         assert!(reg.read() == 0);
         assert!(freg.read() == ZeroFlag | SubtractFlag);
-        
+
         reg.write(0x0);
         decrement_register(&mut reg, &mut freg);
 
-        assert!(reg.read() == 255);
-        assert!(freg.read() == ZeroFlag | SubtractFlag | CarryFlag | HalfCarryFlag);
+        assert!(reg.read() == 0xFF);
+        assert!(freg.read() == SubtractFlag | CarryFlag | HalfCarryFlag);
 
         reg.write(0xF1);
         freg.write(Flags::empty());
@@ -341,6 +326,6 @@ mod tests {
         decrement_register(&mut reg, &mut freg);
 
         assert!(reg.read() == 0xEF);
-        assert!(freg.read() == SubtractFlag);
+        assert!(freg.read() == SubtractFlag | HalfCarryFlag);
     }
 }
